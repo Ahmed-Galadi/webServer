@@ -1,0 +1,29 @@
+server {
+    host 127.0.0.1;
+    port 8080;
+    root /var/www/html;
+
+    error_page 404 /errors/404.html;
+    error_page 500 /errors/500.html;
+
+    location / {
+        root /var/www/html;
+        index index.html;
+        methods GET POST;
+        cgi off;
+    }
+
+    location /images/ {
+        root /var/www/images;
+        index index.jpg;
+        methods GET;
+        cgi off;
+    }
+
+    location /scripts/ {
+        root /var/www/cgi-bin;
+        index index.cgi;
+        methods GET POST DELETE;
+        cgi on;
+    }
+}
