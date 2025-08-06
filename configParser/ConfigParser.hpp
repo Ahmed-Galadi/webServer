@@ -8,6 +8,6 @@ class ConfigParser {
 		std::string 				config_file;
 		std::vector<ServerConfig> 	severs;
 	public:
-		void						parse(std::string);
-		std::vector<ServerConfig> 	getServers();
+		void						parse(std::string config_file);
+		std::vector<ServerConfig> 	getServers() const;
 };
