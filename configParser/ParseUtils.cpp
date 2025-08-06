@@ -59,13 +59,13 @@ bool	ParseUtils::bracketsCheck(std::vector<std::string> &tokens) {
 			depth++;
 		else if (tokens[i] == "}") {
 			depth--;
-			if (depth < 0) {
-				std::cout << "ERROR: unmatched closing brace at token [" << tokens[i] << "]!" << std::endl;
-				return (1);
-			}
+			if (depth < 0)
+				return (false);
 		}
 	}
 	if (depth == 0)
 		return (true);
 	return (false);
 }
+
+
