@@ -16,4 +16,5 @@ class ParseUtils {
 		static bool						bracketsCheck(std::vector<std::string> &tokens);
 		static bool						dupsCheck(std::vector<std::string> &tokens);
 		static bool						syntaxError(std::vector<std::string> &tokens);
+		static int						toInt(std::vector<std::string>::iterator it);
 };

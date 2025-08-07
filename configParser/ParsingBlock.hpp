@@ -13,7 +13,7 @@ class ParsingBlock {
 		std::vector<std::string> getArgs() const;
 		std::vector<std::string> getTokens() const;
 
-		void	setName(std::string &name);
-		void	addToArgs(std::string &arg);
-		void	addToTokens(std::string &token);
+		void	setName(std::string name);
+		void	addToArgs(std::string arg);
+		void	addToTokens(std::string token);
 };

@@ -8,6 +8,8 @@ int main() {
 
 	std::vector<std::string>	tokens = ParseUtils::splitAndAccumulate(data);
 
+	for (int i = 0; i < tokens.size(); i++)
+		std::cout << tokens[i] << std::endl;
 
 	return (0);
 }
