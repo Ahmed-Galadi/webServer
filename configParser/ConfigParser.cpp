@@ -2,13 +2,12 @@
 #include "ConfigParser.hpp"
 #include "ServerConfig.hpp"
 #include "ParseUtils.hpp"
-#include <iterator>
 
-ParsingBlock ConfigParser::makeServerBlock(std::vector<std::string>::iterator &tokens) {
+ParsingBlock ConfigParser::makeServerBlock(std::vector<std::string>::iterator &tokens, std::vector<std::string>::iterator tokensEnd) {
 	ParsingBlock block;
 	block.setName("server");
 	tokens++;
-	while (tokens != tokens->end() && *tokens != "server") {
+	while (tokens != tokensEnd && *tokens != "server") {
 		block.addToTokens(*tokens);
 		tokens++;
 	}
@@ -97,7 +96,7 @@ void	ConfigParser::parse(std::string config_file) {
 
 	for (std::vector<std::string>::iterator it = tokens.begin(); it != tokens.end(); it++)
 		if (*it == "server")
-			serversBlocks.push_back(makeServerBlock(it));
+			serversBlocks.push_back(makeServerBlock(it, tokens.end()));
 
 	for (int index = 0; index < serversBlocks.size(); index++)
 		servers.push_back(makeServerConfig(serversBlocks[index]));

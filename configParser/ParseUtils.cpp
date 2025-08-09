@@ -68,4 +68,13 @@ bool	ParseUtils::bracketsCheck(std::vector<std::string> &tokens) {
 	return (false);
 }
 
+int		ParseUtils::toInt(std::vector<std::string>::iterator it) {
+	int		output;
+	std::istringstream stream(*it);
 
+	stream >> output;
+
+	if (stream.fail() || !stream.eof())
+		exit(1);
+	return (output);
+}

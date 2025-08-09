@@ -9,7 +9,7 @@ class ConfigParser {
 		std::string 				config_file;
 		std::vector<ServerConfig> 	servers;
 
-		static	ParsingBlock 		makeServerBlock(std::vector<std::string>::iterator &tokens);
+		static	ParsingBlock 		makeServerBlock(std::vector<std::string>::iterator &tokens, std::vector<std::string>::iterator tokensEnd);
 		static	ParsingBlock 		makeLocationBlock(std::vector<std::string>::iterator &tokens);
 		static	LocationConfig		makeLocationConfig(std::vector<std::string>::iterator &tokens);
 		static	ServerConfig		makeServerConfig(ParsingBlock servBlock);
