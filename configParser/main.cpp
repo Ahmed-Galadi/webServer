@@ -3,25 +3,28 @@
 #include <iostream>
 #include "ConfigParser.hpp"
 
+
+void	printErrorPages(std::map<int, std::string> pages) {
+
+}
+
+void	printLocations(std::vector<LocationConfig> locations) {
+
+}
+void	printServer(ServerConfig &server) {
+	std::cout << "port: " << server.getPort() << std::endl;
+	std::cout << "host: " << server.getHost() << std::endl;
+	std::cout << "root: " << server.getRoot() << std::endl;
+	// printErrorPages(server.getErrorPages());
+	// printLocations(server.getLocations());
+}
+
 int main() {
-	/*std::vector<std::string>	data = ParseUtils::readFile("config.txt");*/
-	/*std::vector<std::string>	splitData = ParseUtils::splitString(data[0], ' ');*/
-	/**/
-	/*std::vector<std::string>	tokens = ParseUtils::splitAndAccumulate(data);*/
-	/**/
-	/*for (int i = 0; i < tokens.size(); i++)*/
-	/*	std::cout << tokens[i] << std::endl;*/
-	/**/
-	/*std::string s("123457");*/
-	/*std::vector<std::string> vs;*/
-	/*vs.push_back(s);*/
-	/**/
-	/*int intiger = ParseUtils::toInt(vs.begin());*/
-	/**/
-	/*std::cout << "the number is : " << intiger << std::endl;*/
 	
 	ConfigParser WSconfig;
 
 	WSconfig.parse("config.txt");
+	std::vector<ServerConfig> servers = WSconfig.getServers();
+	printServer(servers[0]);
 	return (0);
 }

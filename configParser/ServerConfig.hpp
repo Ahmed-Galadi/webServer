@@ -28,5 +28,7 @@ class ServerConfig {
 
 		int							getPort() const;
 		std::string					getRoot() const;
+		std::string					getHost() const;
+		std::map<int, std::string>	getErrorPages() const;
 		std::vector<LocationConfig>	getLocations() const;
 };

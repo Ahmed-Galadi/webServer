@@ -57,37 +57,94 @@ LocationConfig		ConfigParser::makeLocationConfig(std::vector<std::string>::itera
 }
 
 ServerConfig ConfigParser::makeServerConfig(ParsingBlock servBlock) {
-	std::vector<std::string> 	serverTokens = servBlock.getTokens();
-	std::vector<LocationConfig>	locations;
-	std::map<int, std::string>	errorPages;
-	ServerConfig				outputServer;
-	int tracker;
-	std::vector<std::string>::iterator it;
+    std::vector<std::string>    serverTokens = servBlock.getTokens();
+    std::vector<LocationConfig> locations;
+    std::map<int, std::string>  errorPages;
+    ServerConfig                outputServer;
+    int tracker;
+std::vector<std::string>::iterator it = serverTokens.begin();
+std::vector<std::string>::iterator end = serverTokens.end();
 
-	for (it = serverTokens.begin(); it != serverTokens.end(); it++) {
-		if (*it == "location")
-			locations.push_back(makeLocationConfig(it));
-		else {
-			if (*it == "host")
-				outputServer.setHost((*(it + 1)));
-			else if (*it == "port")
-				outputServer.setPort(ParseUtils::toInt((it + 1)));
-			else if (*it == "root")
-				outputServer.setRoot(*(it + 1));
-			else if (*it == "error_page") {
-				for(; it != serverTokens.end(); it++) {
-					if (*it == "error_page") {
-						it++;
-						errorPages[ParseUtils::toInt(it)] = *(it + 1);
-					}
-				}
-			}
-		}
-	}
+while (it != end) {
+    if (*it == "location") {
+        if ((it + 1) >= end) {
+            std::cerr << "ERROR: 'location' token at end of serverTokens\n";
+            break;
+        }
+        // makeLocationConfig consumes the location block and advances 'it'
+        locations.push_back(makeLocationConfig(it /*, end*/));
+        // do NOT ++it here — makeLocationConfig already advanced 'it' to the next token
+        continue;
+    }
+
+    // handle simple single-token + value pairs safely
+    if ((it + 1) < end && *it == "host") {
+        outputServer.setHost(*(it + 1));
+        it += 2; // we consumed key and value
+        continue;
+    }
+    else if ((it + 1) < end && *it == "port") {
+        outputServer.setPort(ParseUtils::toInt(it + 1));
+        it += 2;
+        continue;
+    }
+    else if ((it + 1) < end && *it == "root") {
+        outputServer.setRoot(*(it + 1));
+        it += 2;
+        continue;
+    }
+    else if (*it == "error_page") {
+        // handle error_page entries safely (consume them here)
+        ++it; // move to status code or whatever your format is
+        if (it == end) break;
+        if ((it + 1) < end) {
+            errorPages[ParseUtils::toInt(it)] = *(it + 1);
+            it += 2;
+            continue;
+        } else break;
+    }
+
+    // unknown token -> skip it
+    ++it;
+}
 	outputServer.setErrorPages(errorPages);
 	outputServer.setLocations(locations);
 	return (outputServer);
 }
+
+// ServerConfig ConfigParser::makeServerConfig(ParsingBlock servBlock) {
+// 	std::vector<std::string> 	serverTokens = servBlock.getTokens();
+// 	std::vector<LocationConfig>	locations;
+// 	std::map<int, std::string>	errorPages;
+// 	ServerConfig				outputServer;
+// 	int tracker;
+// 	std::vector<std::string>::iterator it;
+
+// 	for (it = serverTokens.begin(); it != serverTokens.end(); it++) {
+// 		if (*it == "location")
+// 			locations.push_back(makeLocationConfig(it));
+// 		else {
+// 			if ((it + 1) != serverTokens.end() && *it == "host")
+// 				outputServer.setHost((*(it + 1)));
+// 			else if ((it + 1) != serverTokens.end() && *it == "port")
+// 				outputServer.setPort(ParseUtils::toInt((it + 1)));
+// 			else if ((it + 1) != serverTokens.end() && *it == "root")
+// 				outputServer.setRoot(*(it + 1));
+// 			else if ((it + 1) != serverTokens.end() && *it == "error_page") {
+// 				for(; it != serverTokens.end(); it++) {
+// 					if (*it == "error_page") {
+// 						if ((it + 1) != serverTokens.end()) it++;
+// 						if ((it + 1) != serverTokens.end()) errorPages[ParseUtils::toInt(it)] = *(it + 1);
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	outputServer.setErrorPages(errorPages);
+// 	outputServer.setLocations(locations);
+// 	return (outputServer);
+// }
+
 
 void	ConfigParser::parse(std::string config_file) {
 	std::vector<std::string>	configFileData = ParseUtils::readFile(config_file);

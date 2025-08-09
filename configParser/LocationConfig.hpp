@@ -18,6 +18,9 @@ class LocationConfig {
 		void		setCGI(bool state);
 		void		setIndex(std::string indexStr);
 
-		std::string	getPath() const;
-		bool		isCGIEnabled()	const;
+		std::string					getPath() const;
+		std::string					getRoot() const;
+		std::string					getIndex() const;
+		std::vector<std::string>	getMethods() const;
+		bool						isCGIEnabled()	const;
 };

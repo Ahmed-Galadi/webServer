@@ -29,6 +29,14 @@ std::string	ServerConfig::getRoot() const {
 	return (this->root);
 }
 
+std::string	ServerConfig::getHost() const {
+	return (this->host);
+}
+
+std::map<int, std::string> ServerConfig::getErrorPages() const {
+	return (this->error_pages);
+}
+
 std::vector<LocationConfig> ServerConfig::getLocations() const {
 	return (this->locations);
 }
