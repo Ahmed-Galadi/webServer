@@ -4,14 +4,22 @@
 #include "ParseUtils.hpp"
 
 ParsingBlock ConfigParser::makeServerBlock(std::vector<std::string>::iterator &tokens, std::vector<std::string>::iterator tokensEnd) {
-	ParsingBlock block;
-	block.setName("server");
-	tokens++;
-	while (tokens != tokensEnd && *tokens != "server") {
-		block.addToTokens(*tokens);
-		tokens++;
-	}
-	return (block);
+    ParsingBlock block;
+    block.setName("server");
+    if (tokens == tokensEnd || *tokens != "server") return block;
+    ++tokens;
+    while (tokens != tokensEnd && *tokens != "{") ++tokens;
+    if (tokens == tokensEnd) return block;
+    int depth = 0;
+    while (tokens != tokensEnd) {
+        const std::string &tok = *tokens;
+        if (tok == "{") ++depth;
+        else if (tok == "}") --depth;
+        block.addToTokens(tok);
+        ++tokens;
+        if (depth == 0) break;
+    }
+    return block;
 }
 
 ParsingBlock ConfigParser::makeLocationBlock(std::vector<std::string>::iterator &tokens) {
@@ -47,9 +55,9 @@ LocationConfig		ConfigParser::makeLocationConfig(std::vector<std::string>::itera
 			for (; (*tokens == "GET" || *tokens == "POST" || *tokens == "DELETE"); tokens++)
 				outputLocation.setMethods(*tokens);
 		} else if (*tokens == "cgi") {
-			if (*(tokens + 1) == "true")
+			if (*(tokens + 1) == "on")
 				outputLocation.setCGI(true);
-			else
+			else if (*(tokens + 1) == "off")
 				outputLocation.setCGI(false);
 		}
 	}
@@ -71,9 +79,8 @@ while (it != end) {
             std::cerr << "ERROR: 'location' token at end of serverTokens\n";
             break;
         }
-        // makeLocationConfig consumes the location block and advances 'it'
-        locations.push_back(makeLocationConfig(it /*, end*/));
-        // do NOT ++it here — makeLocationConfig already advanced 'it' to the next token
+
+        locations.push_back(makeLocationConfig(it));
         continue;
     }
 
@@ -94,8 +101,7 @@ while (it != end) {
         continue;
     }
     else if (*it == "error_page") {
-        // handle error_page entries safely (consume them here)
-        ++it; // move to status code or whatever your format is
+        ++it;
         if (it == end) break;
         if ((it + 1) < end) {
             errorPages[ParseUtils::toInt(it)] = *(it + 1);
@@ -103,8 +109,6 @@ while (it != end) {
             continue;
         } else break;
     }
-
-    // unknown token -> skip it
     ++it;
 }
 	outputServer.setErrorPages(errorPages);
@@ -112,51 +116,24 @@ while (it != end) {
 	return (outputServer);
 }
 
-// ServerConfig ConfigParser::makeServerConfig(ParsingBlock servBlock) {
-// 	std::vector<std::string> 	serverTokens = servBlock.getTokens();
-// 	std::vector<LocationConfig>	locations;
-// 	std::map<int, std::string>	errorPages;
-// 	ServerConfig				outputServer;
-// 	int tracker;
-// 	std::vector<std::string>::iterator it;
+void ConfigParser::parse(std::string config_file) {
+    std::vector<std::string> configFileData = ParseUtils::readFile(config_file);
+    std::vector<std::string> tokens = ParseUtils::splitAndAccumulate(configFileData);
+    std::vector<ParsingBlock> serversBlocks;
 
-// 	for (it = serverTokens.begin(); it != serverTokens.end(); it++) {
-// 		if (*it == "location")
-// 			locations.push_back(makeLocationConfig(it));
-// 		else {
-// 			if ((it + 1) != serverTokens.end() && *it == "host")
-// 				outputServer.setHost((*(it + 1)));
-// 			else if ((it + 1) != serverTokens.end() && *it == "port")
-// 				outputServer.setPort(ParseUtils::toInt((it + 1)));
-// 			else if ((it + 1) != serverTokens.end() && *it == "root")
-// 				outputServer.setRoot(*(it + 1));
-// 			else if ((it + 1) != serverTokens.end() && *it == "error_page") {
-// 				for(; it != serverTokens.end(); it++) {
-// 					if (*it == "error_page") {
-// 						if ((it + 1) != serverTokens.end()) it++;
-// 						if ((it + 1) != serverTokens.end()) errorPages[ParseUtils::toInt(it)] = *(it + 1);
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// 	outputServer.setErrorPages(errorPages);
-// 	outputServer.setLocations(locations);
-// 	return (outputServer);
-// }
-
-
-void	ConfigParser::parse(std::string config_file) {
-	std::vector<std::string>	configFileData = ParseUtils::readFile(config_file);
-	std::vector<std::string>	tokens = ParseUtils::splitAndAccumulate(configFileData);
-	std::vector<ParsingBlock>	serversBlocks;
-
-	for (std::vector<std::string>::iterator it = tokens.begin(); it != tokens.end(); it++)
-		if (*it == "server")
-			serversBlocks.push_back(makeServerBlock(it, tokens.end()));
-
-	for (int index = 0; index < serversBlocks.size(); index++)
-		servers.push_back(makeServerConfig(serversBlocks[index]));
+    std::vector<std::string>::iterator it = tokens.begin();
+    std::vector<std::string>::iterator end = tokens.end();
+    while (it != end) {
+        if (*it == "server") {
+            std::vector<std::string>::iterator before = it;
+            serversBlocks.push_back(makeServerBlock(it, end));
+            if (it == before) ++it;
+            continue;
+        }
+        ++it;
+    }
+    for (size_t i = 0; i < serversBlocks.size(); ++i)
+        servers.push_back(makeServerConfig(serversBlocks[i]));
 }
 
 std::vector<ServerConfig> ConfigParser::getServers() const {
