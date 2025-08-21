@@ -15,7 +15,7 @@ server {
     location / {
         root /var/www/html ;
         index index.html ;
-        methods GET;
+        methods GET ;
         cgi off ;
     }
     location /images/ {
@@ -66,8 +66,8 @@ server {
     host 255.3.2.1 ;
     port 1010 ;
     root /var/www/html ;
-	error_page 405 /errors/405.html ;
-	error_page 505 /errors/505.html ;
+    error_page 405 /errors/405.html ;
+    error_page 505 /errors/505.html ;
     error_page 404 /errors/404.html ;
     error_page 500 /errors/500.html ;
     location / {

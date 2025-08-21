@@ -83,11 +83,9 @@ while (it != end) {
         locations.push_back(makeLocationConfig(it));
         continue;
     }
-
-    // handle simple single-token + value pairs safely
     if ((it + 1) < end && *it == "host") {
         outputServer.setHost(*(it + 1));
-        it += 2; // we consumed key and value
+        it += 2;
         continue;
     }
     else if ((it + 1) < end && *it == "port") {

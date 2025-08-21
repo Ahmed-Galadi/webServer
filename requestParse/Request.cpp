@@ -1,20 +1,10 @@
-
-// Request.cpp
 #include "Request.hpp"
 #include <iostream>
-#include <string>
-#include <vector>
-#include <map>
 #include <cctype>
 #include "../configParser/ParseUtils.hpp"
+#include "RequestParser.hpp"
 
-static std::string trim(const std::string &s) {
-    size_t start = 0;
-    while (start < s.size() && isspace((unsigned char)s[start])) ++start;
-    size_t end = s.size();
-    while (end > start && isspace((unsigned char)s[end - 1])) --end;
-    return s.substr(start, end - start);
-}
+
 
 Request::Request(std::string rawRequest) {
     parseRawReq(rawRequest);
@@ -77,14 +67,38 @@ void Request::extractRequestData(std::string rawReqData) {
         std::cout << "Error: request data is not properly set!" << std::endl;
         exit(1);
     }
-    this->method = trim(splitedReqData[0]);
-    this->uri = trim(splitedReqData[1]);
-    this->version = trim(splitedReqData[2]);
+    this->method = ParseUtils::trim(splitedReqData[0]);
+	size_t question = splitedReqData[1].find('?');
+	if (question == std::string::npos)
+		this->uri = ParseUtils::trim(splitedReqData[1]);
+	else {
+		std::vector<std::string> splitURIfromQuery = ParseUtils::splitString(splitedReqData[1], '?');
+    	this->uri = ParseUtils::trim(splitURIfromQuery[0]);
+		extractQuery(ParseUtils::trim(splitURIfromQuery[1]));
+	}
+    this->version = ParseUtils::trim(splitedReqData[2]);
+}
+
+void	Request::extractQuery(std::string queryString) {
+	std::vector<std::string> splitedQuery = ParseUtils::splitString(queryString, '&');
+	std::map<std::string, std::string> outputQuery;
+	std::pair<std::string, std::string> holderQuery;
+
+	for (int i = 0; i < splitedQuery.size(); i++) {
+		std::vector<std::string> tmp = ParseUtils::splitString(splitedQuery[i], '=');
+		if (tmp.size() != 2) {
+			std::cout << "Error: Querry format error" << std::endl;
+			exit(1);
+		}
+		holderQuery = std::make_pair(tmp[0], tmp[1]);
+		outputQuery.insert(holderQuery);
+	}
+	this->query = outputQuery;
 }
 
 void Request::extractHeaders(std::vector<std::string> splitedHeaders) {
     for (size_t i = 0; i < splitedHeaders.size(); ++i) {
-        std::string line = trim(splitedHeaders[i]);
+        std::string line = ParseUtils::trim(splitedHeaders[i]);
         if (line.empty())
             continue;
         size_t colon = line.find(':');
@@ -92,11 +106,12 @@ void Request::extractHeaders(std::vector<std::string> splitedHeaders) {
             std::cout << "Error: Incomplete header" << std::endl;
             exit(1);
         }
-        std::string key = trim(line.substr(0, colon));
-        std::string value = trim(line.substr(colon + 1));
+        std::string key = ParseUtils::trim(line.substr(0, colon));
+        std::string value = ParseUtils::trim(line.substr(colon + 1));
         this->headers.insert(std::make_pair(key, value));
     }
 }
+
 
 void Request::extractBody(std::string rawBody) {
     this->body = rawBody;
@@ -118,6 +133,17 @@ std::string	Request::getVersion() const {
 	return (version);
 }
 
-std::string	Request::getBody() const {
+std::vector<RequestBody>	Request::getBody() {
+	if (method == "POST")
+		return (RequestParser::ParseBody(*this));
+	std::cout << "ERROR: can't parse body if not POST method!" << std::endl;
+	exit(1);
+}
+
+std::map<std::string, std::string> Request::getQuery() const {
+	return (query);
+}
+
+std::string		Request::getRawBody() const {
 	return (body);
 }

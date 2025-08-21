@@ -7,6 +7,23 @@
 #include <vector>
 #include <sstream>
 
+int		ParseUtils::htoi(const std::string &hexStr) {
+    int result = 0;
+    for (size_t i = 0; i < hexStr.size(); ++i) {
+        char c = std::toupper(hexStr[i]);
+        int value;
+
+        if (std::isdigit(c))
+            value = c - '0';
+        else if (c >= 'A' && c <= 'F')
+            value = 10 + (c - 'A');
+        else
+            break;
+        result = result * 16 + value;
+    }
+    return result;
+}
+
 std::vector<std::string> ParseUtils::readFile(std::string fileName) {
 	if (fileName.empty()) {
 		std::cout << "Error: Enter config file!" << std::endl;
@@ -35,6 +52,14 @@ std::vector<std::string>	ParseUtils::splitString(std::string &str, char del) {
 	while (std::getline(ss, oneSplitedStr, del))
 		output.push_back(oneSplitedStr);
 	return (output);
+}
+
+std::string ParseUtils::trim(const std::string &s) {
+    size_t start = 0;
+    while (start < s.size() && isspace((unsigned char)s[start])) ++start;
+    size_t end = s.size();
+    while (end > start && isspace((unsigned char)s[end - 1])) --end;
+    return s.substr(start, end - start);
 }
 
 std::vector<std::string> ParseUtils::splitAndAccumulate(std::vector<std::string> fileData) {
