@@ -12,7 +12,8 @@ class Request {
 		std::string							version;
 		std::string							body;
 		std::map<std::string, std::string>	query;
-		int									status;
+		bool								isValid;
+		bool								isComplete;
 
 		void						parseRawReq(std::string rawRequest);
 		std::vector<std::string>	splitHeaderFromBody(std::string rawRequest);
