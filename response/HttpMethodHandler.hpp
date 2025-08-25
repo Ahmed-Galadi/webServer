@@ -20,7 +20,12 @@ class DELETEhandle : public HttpMethodHandler {
 		Response handle(const Request &req);
 };
 
-class POSTHandle : public HttpMethodHandler {
+class POSThandle : public HttpMethodHandler {
 	public:
 		Response handle(const Request &req);
-}
+};
+
+class	HttpMethodDispatcher {
+	public:
+		static Response	executeHttpMethod(const Request &request);
+};
