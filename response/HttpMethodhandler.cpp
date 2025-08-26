@@ -13,7 +13,6 @@ static bool isDirectory(const std::string &path) {
 }
 
 Response	GEThandle::handle(const Request &req) {
-	// TO DO
 	std::string root = "/www"; // config server root
 	std::string	path = root + req.getURI();
 
@@ -23,10 +22,8 @@ Response	GEThandle::handle(const Request &req) {
 	
 	// open file if not open setStatus to 404
 	std::ifstream file(path.c_str(), std::ios::binary);
-	if (!file.is_open()) {
-		std::cout << "Error: 404 Not Found!";
-		exit(1);
-	}
+	if (!file.is_open())
+		return (Response::notFound());
 
 	// read actual file and gather the content and content length 
 	std::ostringstream bodyBuffer;
@@ -40,7 +37,7 @@ Response	GEThandle::handle(const Request &req) {
 	resHeader.insert(contentType);
 
 	// construct the response
-	Response outputRes(req);
+	Response outputRes;
 
 	outputRes.setStatus(200);
 	outputRes.setVersion(req.getVersion());
