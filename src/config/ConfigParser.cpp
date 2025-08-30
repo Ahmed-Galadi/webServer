@@ -69,7 +69,7 @@ ServerConfig ConfigParser::makeServerConfig(ParsingBlock servBlock) {
     std::vector<LocationConfig> locations;
     std::map<int, std::string>  errorPages;
     ServerConfig                outputServer;
-    int tracker;
+
 std::vector<std::string>::iterator it = serverTokens.begin();
 std::vector<std::string>::iterator end = serverTokens.end();
 

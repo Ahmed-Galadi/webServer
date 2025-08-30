@@ -40,3 +40,12 @@ std::map<int, std::string> ServerConfig::getErrorPages() const {
 std::vector<LocationConfig> ServerConfig::getLocations() const {
 	return (this->locations);
 }
+
+LocationConfig* ServerConfig::findLocation(const std::string& uri) const {
+    for (size_t i = 0; i < locations.size(); ++i) {
+        if (uri.find(locations[i].getPath()) == 0) { // Simple prefix match
+            return const_cast<LocationConfig*>(&locations[i]); // Cast to non-const if needed
+        }
+    }
+    return NULL; // No match
+}

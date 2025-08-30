@@ -23,4 +23,5 @@ class LocationConfig {
 		std::string					getIndex() const;
 		std::vector<std::string>	getMethods() const;
 		bool						isCGIEnabled()	const;
+		bool						isMethodAllowed(const std::string& method) const;
 };

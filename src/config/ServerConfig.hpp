@@ -31,4 +31,5 @@ class ServerConfig {
 		std::string					getHost() const;
 		std::map<int, std::string>	getErrorPages() const;
 		std::vector<LocationConfig>	getLocations() const;
+		LocationConfig* findLocation(const std::string& uri) const;
 };

@@ -39,3 +39,12 @@ std::vector<std::string> LocationConfig::getMethods() const {
 bool	LocationConfig::isCGIEnabled() const {
 	return (cgi_enabled);
 }
+
+bool LocationConfig::isMethodAllowed(const std::string& method) const {
+	for (size_t i = 0; i < methods.size(); ++i) {
+		if (methods[i] == method) {
+			return true;
+		}
+	}
+	return false;
+}
