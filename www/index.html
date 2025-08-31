@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🚀 WebServ Server</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      text-align: center;
+      animation: fadeIn 2s ease-in-out;
+    }
+    h1 {
+      font-size: 3em;
+      margin-bottom: 0.2em;
+      animation: bounce 2s infinite;
+    }
+    .status {
+      font-size: 1.3em;
+      margin-bottom: 1.5em;
+      font-weight: bold;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      text-align: left;
+      display: inline-block;
+    }
+    li {
+      margin: 0.5em 0;
+      font-size: 1.1em;
+    }
+    .check {
+      color: #00ff88;
+    }
+    .pending {
+      color: #ffcc00;
+    }
+    button {
+      margin-top: 2em;
+      padding: 0.7em 1.5em;
+      border: none;
+      border-radius: 8px;
+      background: #00c3ff;
+      color: #fff;
+      font-size: 1em;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #009ac7;
+      transform: scale(1.05);
+    }
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+      40% {transform: translateY(-20px);}
+      60% {transform: translateY(-10px);}
+    }
+    @keyframes fadeIn {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
+    .rocket {
+      position: absolute;
+      bottom: -100px;
+      font-size: 3em;
+      animation: launch 6s linear infinite;
+    }
+    @keyframes launch {
+      from {bottom: -100px; left: 20%;}
+      to {bottom: 110%; left: 80%;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 WebServ Server</h1>
+    <p class="status">Status: <span style="color:#00ff88;">Server is running successfully!</span></p>
+    <p>Welcome to our <strong>WebServ</strong> implementation.<br>
+    This page verifies that the server is alive and kicking! ⚡</p>
+    <h2>Features to Test:</h2>
+    <ul>
+      <li class="check">✅ Basic HTTP server functionality</li>
+      <li class="pending">⏳ Static file serving (to be implemented)</li>
+      <li class="pending">⏳ CGI support (to be implemented)</li>
+      <li class="pending">⏳ Configuration parsing (to be implemented)</li>
+      <li class="pending">⏳ Error page handling (to be implemented)</li>
+    </ul>
+    <button onclick="party()">🎉 Celebrate</button>
+  </div>
+  <div class="rocket">🚀</div>
+  <script>
+    function party() {
+      const colors = ["#ff0000", "#00ff00", "#00c3ff", "#ffcc00", "#ff00ff"];
+      const body = document.body;
+      let i = 0;
+      const interval = setInterval(() => {
+        body.style.background = colors[i % colors.length];
+        i++;
+        if (i > 15) clearInterval(interval);
+      }, 200);
+      alert("WebServ is running! 🚀🔥");
+    }
+  </script>
+</body>
+</html>
