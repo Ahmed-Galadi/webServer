@@ -61,7 +61,7 @@ void RequestParser::extractEncodedData(RequestBody &rb, const std::string &bodyR
     		std::vector<std::string> kv = ParseUtils::splitString(pairs[i], '=');
    			if (kv.size() != 2) {
         		std::cerr << "Error: Not valid URL-encoded data!" << std::endl;
-       			exit(1);
+       			throw (Request::InvalidRequest);
     		}
 			parseHexa(kv[0]);
 			parseHexa(kv[1]);
@@ -78,11 +78,8 @@ RequestBody RequestParser::extractBodyPart(const std::string &rawBodyPart) {
     RequestBody output;
 
     std::vector<std::string> splitHeaderFromData = splitBody(rawBodyPart, "\r\n\r\n");
-    if (splitHeaderFromData.size() < 2) {
-        std::cerr << "Error: Malformed multipart body part" << std::endl;
-        exit(1);
-    }
-
+    if (splitHeaderFromData.size() < 2)
+		throw (Request::InvalidRequest);
     std::string headerBlock = splitHeaderFromData[0];
     std::string body = splitHeaderFromData[1];
 
@@ -147,13 +144,13 @@ bool	RequestParser::boundariesError(std::string &rawBody, const std::string &bou
 	}
 	if (boundaries.front() == boundaries.back()) {
 		std::cout << "Error: multipart boundary incorrect!" << std::endl;
-		exit(1);
+		throw (Request::InvalidRequest);
 	}
 
 	std::string tmpLastBoundary = boundary + "--";
 	if (boundaries.back() != tmpLastBoundary) {
-		std::cout << "ERROR: multipart Boundary is incorrect!" << std::endl;
-		exit(1);
+		std::cout << "Error: multipart boundary incorrect!" << std::endl;
+		throw (Request::InvalidRequest);
 	}
 	
 }
@@ -192,7 +189,7 @@ std::vector<RequestBody> RequestParser::ParseBody(const Request &req) {
     std::map<std::string, std::string> headers = req.getHeaders();
     if (headers.find("Content-Type") == headers.end()) {
         std::cerr << "ERROR: Cannot parse body without Content-Type" << std::endl;
-        exit(1);
+        throw (RequestBody::InvalidRequest);
     }
 
     std::string contentType = headers["Content-Type"];
@@ -209,7 +206,7 @@ std::vector<RequestBody> RequestParser::ParseBody(const Request &req) {
     std::vector<std::string> parts = ParseUtils::splitString(contentType, ';');
     if (parts.size() < 2) {
         std::cerr << "ERROR: Invalid multipart Content-Type" << std::endl;
-        exit(1);
+        throw (RequestBody::InvalidRequest);
     }
 
     std::string typePart = ParseUtils::trim(parts[0]);
@@ -223,7 +220,7 @@ std::vector<RequestBody> RequestParser::ParseBody(const Request &req) {
         boundary = boundaryPart[1];
     } else {
         std::cerr << "ERROR: Invalid multipart Content-Type header" << std::endl;
-        exit(1);
+        throw (RequestBody::InvalidRequest);
     }
 
     extractMultiPart(output, req.getRawBody(), boundary, "form-data");

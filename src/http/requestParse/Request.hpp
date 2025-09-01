@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include "RequestBody.hpp"
+#include <exception>
 
 class Request {
 	private:
@@ -12,8 +13,6 @@ class Request {
 		std::string							version;
 		std::string							body;
 		std::map<std::string, std::string>	query;
-		bool								isValid;
-		bool								isComplete;
 
 		void						parseRawReq(std::string rawRequest);
 		std::vector<std::string>	splitHeaderFromBody(std::string rawRequest);
@@ -23,6 +22,7 @@ class Request {
 		void						extractQuery(std::string queryString);
 	public:
 		Request(std::string rawRequest);
+
 		std::map<std::string, std::string>	getHeaders() const;
 		std::string							getMethod() const;
 		std::string							getURI() const;
@@ -30,4 +30,25 @@ class Request {
 		std::vector<RequestBody>			getBody();
 		std::string							getRawBody() const;
 		std::map<std::string, std::string>	getQuery() const;
+
+		// exceptions
+		class	InvalidRequest : public std::Exception {
+			public:
+				const char *what() const throw();
+		};
+
+		class	IncompleteRequest : public std::Exception {
+			public:
+				const char *what() const throw();
+		};
+
+		class	ForbiddenMethod : public std::Exception {
+			public:
+				const char *what() const throw();
+		};
+
+		class	NotSupportedRequest : public std::Exception {
+			public:
+				const char *what() const throw();
+		};
 };

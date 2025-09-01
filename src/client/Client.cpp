@@ -1,3 +1,4 @@
+
 // ============ Enhanced Debug Version of Client.cpp ============
 #include "Client.hpp"
 #include <unistd.h>
@@ -235,7 +236,7 @@ void Client::buildResponse() {
     // Build a simple HTTP response
     std::string body = "Hello World!";
     
-    write_buffer = "HTTP/1.1 200 OK\r\n";
+    write_buffer = "HTTP/1.0 200 OK\r\n";
     write_buffer += "Content-Type: text/html\r\n";
     write_buffer += "Content-Length: ";
     

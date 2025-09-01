@@ -14,59 +14,50 @@ void Request::parseRawReq(std::string rawRequest) {
     std::vector<std::string> separateData = splitHeaderFromBody(rawRequest);
     std::vector<std::string> headers;
 
-    if (separateData.size() < 2) {
-        std::cout << "Error: incomplete header" << std::endl;
-        exit(1);
-    } else {
+    if (separateData.size() < 2)
+		throw (IncompleteRequest);
+	else {
         extractRequestData(separateData[0]);
         headers = ParseUtils::splitString(separateData[1], '\n');
         extractHeaders(headers);
-        if (separateData.size() == 3)
+        if (separateData.size() == 3) {
             extractBody(separateData[2]);
-        if (separateData.size() > 3) {
-            std::cout << "Error: Weird Request!" << std::endl;
-            exit(1);
-        }
+        } else if (separateData.size() > 3)
+			throw (InvalidRequest);
     }
 }
 
 std::vector<std::string> Request::splitHeaderFromBody(std::string rawRequest) {
     std::vector<std::string> output;
     size_t delPos = rawRequest.find("\r\n\r\n");
-    if (delPos == std::string::npos) {
-        std::cout << "Error: Incomplete Request" << std::endl;
-        exit(1);
-    }
+    if (delPos == std::string::npos)
+		throw (IncompleteRequest);
 
     std::string headerBlock = rawRequest.substr(0, delPos);
 
 
     size_t firstCRLF = headerBlock.find("\r\n");
-    if (firstCRLF == std::string::npos) {
-        std::cout << "Error: no request line" << std::endl;
-        exit(1);
-    }
+    if (firstCRLF == std::string::npos)
+		throw (InvalidRequest);
+    else {
+    	std::string requestLine = headerBlock.substr(0, firstCRLF);
+    	std::string headerLines = headerBlock.substr(firstCRLF + 2);
 
-    std::string requestLine = headerBlock.substr(0, firstCRLF);
-    std::string headerLines = headerBlock.substr(firstCRLF + 2);
+    	output.push_back(requestLine);
+    	output.push_back(headerLines);
 
-    output.push_back(requestLine);
-    output.push_back(headerLines);
-
-    std::string bodyHolder = rawRequest.substr(delPos + 4);
-    if (!bodyHolder.empty())
-        output.push_back(bodyHolder);
-
-    return output;
+    	std::string bodyHolder = rawRequest.substr(delPos + 4);
+    	if (!bodyHolder.empty())
+        	output.push_back(bodyHolder);
+    	return (output);
+	}
 }
 
 void Request::extractRequestData(std::string rawReqData) {
     std::vector<std::string> splitedReqData = ParseUtils::splitString(rawReqData, ' ');
 
-    if (splitedReqData.size() < 3) {
-        std::cout << "Error: request data is not properly set!" << std::endl;
-        exit(1);
-    }
+    if (splitedReqData.size() < 3)
+		throw (InvalidRequest);
     this->method = ParseUtils::trim(splitedReqData[0]);
 	size_t question = splitedReqData[1].find('?');
 	if (question == std::string::npos)
@@ -86,10 +77,8 @@ void	Request::extractQuery(std::string queryString) {
 
 	for (int i = 0; i < splitedQuery.size(); i++) {
 		std::vector<std::string> tmp = ParseUtils::splitString(splitedQuery[i], '=');
-		if (tmp.size() != 2) {
-			std::cout << "Error: Querry format error" << std::endl;
-			exit(1);
-		}
+		if (tmp.size() != 2)
+			throw (InvalidRequest);
 		holderQuery = std::make_pair(tmp[0], tmp[1]);
 		outputQuery.insert(holderQuery);
 	}
@@ -102,10 +91,8 @@ void Request::extractHeaders(std::vector<std::string> splitedHeaders) {
         if (line.empty())
             continue;
         size_t colon = line.find(':');
-        if (colon == std::string::npos) {
-            std::cout << "Error: Incomplete header" << std::endl;
-            exit(1);
-        }
+        if (colon == std::string::npos)
+			throw (InvalidRequest);
         std::string key = ParseUtils::trim(line.substr(0, colon));
         std::string value = ParseUtils::trim(line.substr(colon + 1));
         this->headers.insert(std::make_pair(key, value));
@@ -136,8 +123,6 @@ std::string	Request::getVersion() const {
 std::vector<RequestBody>	Request::getBody() {
 	if (method == "POST")
 		return (RequestParser::ParseBody(*this));
-	std::cout << "ERROR: can't parse body if not POST method!" << std::endl;
-	exit(1);
 }
 
 std::map<std::string, std::string> Request::getQuery() const {
@@ -148,3 +133,20 @@ std::string		Request::getRawBody() const {
 	return (body);
 }
 
+// exceptions
+
+const char *Request::InvalidRequest::what() const throw() {
+	return ("");
+}
+
+const char *Request::IncompleteRequest::what() const throw() {
+	return ("");
+}
+
+const char *Request::ForbiddenMethod::what() const throw() {
+	return ("");
+}
+
+const char *Request::NotSupportedRequest::what() const throw() {
+	return ("");
+}

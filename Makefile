@@ -16,9 +16,11 @@ SOURCES = $(SRCDIR)/main.cpp \
           $(SRCDIR)/config/ParsingBlock.cpp \
           $(SRCDIR)/config/ConfigParser.cpp \
           $(SRCDIR)/client/Client.cpp \
-          $(SRCDIR)/http/Request.cpp \
-          $(SRCDIR)/http/Response.cpp
-
+          $(SRCDIR)/http/requestParse/Request.cpp \
+		  $(SRCDIR)/http/requestParse/RequestBody.cpp \
+		  $(SRCDIR)/http/requestParse/RequestParser.cpp \
+          $(SRCDIR)/http/response/Response.cpp \
+		  $(SRCDIR)/http/response/HttpMethodhandler.cpp
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 DEPFILES = $(OBJECTS:.o=.d)
 

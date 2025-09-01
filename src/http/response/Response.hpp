@@ -14,6 +14,7 @@ class	Response {
 		std::string							server;
 		std::string							date;
 		int									status;
+		bool								keepAlive;
 
 	public:
 
@@ -24,6 +25,9 @@ class	Response {
 		void	setBody(const std::string &rawBody);
 		void	setServer(const std::string &srv);
 		void	setDate();
+		void	setIsAlive(bool isAlive);
+
+		bool								getIsAlive() const;
 
 		std::map<std::string, std::string>	getHeaders() const;
 		std::string							getConnection() const;

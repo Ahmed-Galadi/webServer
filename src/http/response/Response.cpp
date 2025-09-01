@@ -61,6 +61,10 @@ void	Response::setBody(const std::string &rawBody) {
 	this->body = rawBody;
 }
 
+void		Response::setIsAlive(bool isAlive) {
+	this->keepAlive = isAlive;
+}
+
 void	Response::setDate() {
 	char dateBuffer[255];
 	std::time_t now = std::time(NULL);
@@ -102,6 +106,10 @@ std::string Response::getServer() const {
 
 std::string Response::getDate() const {
 	return (date);
+}
+
+bool		Response::getIsAlive() const {
+	return (keepAlive);
 }
 
 // to string
