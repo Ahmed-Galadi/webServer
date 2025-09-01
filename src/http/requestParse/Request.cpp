@@ -11,18 +11,24 @@ Request::Request(std::string rawRequest) {
 }
 
 void Request::parseRawReq(std::string rawRequest) {
-    std::vector<std::string> separateData = splitHeaderFromBody(rawRequest);
-    std::vector<std::string> headers;
+    std::vector<std::string>	separateData = splitHeaderFromBody(rawRequest);
+    std::vector<std::string>	headers;
 
     if (separateData.size() < 2)
 		throw (IncompleteRequest);
 	else {
         extractRequestData(separateData[0]);
+		if (method != "POST" && method != "DELETE" && method != "GET")
+			throw (ForbiddenMethod);
         headers = ParseUtils::splitString(separateData[1], '\n');
         extractHeaders(headers);
         if (separateData.size() == 3) {
             extractBody(separateData[2]);
         } else if (separateData.size() > 3)
+			throw (InvalidRequest);
+		if (method == "POST" && separateData[2].size() < headers["Content-Length"])
+			throw (IncompleteRequest);
+		else if (method == "POST" && separateData[2].size() > headers["Content-Length"])
 			throw (InvalidRequest);
     }
 }
@@ -136,17 +142,17 @@ std::string		Request::getRawBody() const {
 // exceptions
 
 const char *Request::InvalidRequest::what() const throw() {
-	return ("");
+	return ("\e[31m[REQUEST ERROR: INVALID REQUEST!]\e[0m");
 }
 
 const char *Request::IncompleteRequest::what() const throw() {
-	return ("");
+	return ("\e[33m[REQUEST WARNING: INCOMPLETE REQUEST!]\e[0m");
 }
 
 const char *Request::ForbiddenMethod::what() const throw() {
-	return ("");
+	return ("\e[31m[REQUEST ERROR: FORBIDDEN METHOD?]\e[0m");
 }
 
 const char *Request::NotSupportedRequest::what() const throw() {
-	return ("");
+	return ("\e[31m[REQUEST ERROR: NOT SUPORTED!]\e[0m");
 }

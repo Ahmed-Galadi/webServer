@@ -32,22 +32,22 @@ class Request {
 		std::map<std::string, std::string>	getQuery() const;
 
 		// exceptions
-		class	InvalidRequest : public std::Exception {
+		class	InvalidRequest : public std::exception {
 			public:
 				const char *what() const throw();
 		};
 
-		class	IncompleteRequest : public std::Exception {
+		class	IncompleteRequest : public std::exception {
 			public:
 				const char *what() const throw();
 		};
 
-		class	ForbiddenMethod : public std::Exception {
+		class	ForbiddenMethod : public std::exception {
 			public:
 				const char *what() const throw();
 		};
 
-		class	NotSupportedRequest : public std::Exception {
+		class	NotSupportedRequest : public std::exception {
 			public:
 				const char *what() const throw();
 		};
