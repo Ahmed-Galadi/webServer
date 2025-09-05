@@ -231,7 +231,6 @@ void Client::buildResponse() {
     std::cout << "[DEBUG] Response: [" << write_buffer << "]" << std::endl;
 }
 
-
 // void Client::parseRequest() {
 //     std::cout << "[DEBUG] parseRequest: buffer size = " << read_buffer.size() << std::endl;
     
