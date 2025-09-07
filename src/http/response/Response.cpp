@@ -1,6 +1,9 @@
 #include "Response.hpp"
 #include <sstream>
 #include <ctime>
+#include "../../config/ParseUtils.hpp"
+#include <fstream>
+#include <sstream>
 
 // static exit codes
 static const std::map<int, std::string> initExitCodes() {
@@ -17,15 +20,25 @@ const std::map<int, std::string> Response::EXIT_CODES = initExitCodes();
 
 // static members
 
-Response	*Response::makeErrorResponse(int status, const std::string &errorBody) {
+Response	*Response::makeErrorResponse(int status) {
 	Response 							*outputResponse = new Response();
 	std::map<std::string, std::string>	headers;
 	std::pair<std::string, std::string> tmpPair;
 	std::stringstream					ss;
+	std::string							errorBody;
 
 	outputResponse->setStatus(status);
 	outputResponse->setVersion("HTTP/1.0");
-
+	// read error file
+	std::string fileName = "www/error/" + ParseUtils::toString(status) + ".html";
+	std::ifstream	errorFile(fileName.c_str());
+	if (!errorFile) 
+		errorBody = "<h1>ERROR!<h1/>";
+	else {
+		std::ostringstream buffer;
+    	buffer << errorFile.rdbuf();
+    	errorBody = buffer.str();
+	}
 	// set body
 	outputResponse->body = errorBody;
 	ss << errorBody.size();

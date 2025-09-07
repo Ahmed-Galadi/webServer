@@ -24,8 +24,8 @@ Response	*GEThandle::handle(const Request &req) {
 	// open file if not open setStatus to 404
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file.is_open())
-		return (Response::makeErrorResponse(404, "NOT FOUND!"));
-
+		return (Response::makeErrorResponse(404));
+ 
 	// read actual file and gather the content and content length 
 	std::ostringstream bodyBuffer;
 	bodyBuffer << file.rdbuf();

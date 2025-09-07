@@ -66,7 +66,7 @@ void Server::initialize(EventManager& event_manager) {
 			}
 			std::cout << "[DEBUG] Binding to host: " << configs[i].getHost() << std::endl;
 		}
-
+		std::cout << "------------------------------------- server fd:" << server_fd << std::endl;
 		if (bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
 			std::cerr << "[ERROR] Failed to bind socket to port " << configs[i].getPort() 
 					  << ": " << strerror(errno) << std::endl;

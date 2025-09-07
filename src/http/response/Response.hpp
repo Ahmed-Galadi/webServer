@@ -35,5 +35,5 @@ class	Response {
 
 		std::string 						toString() const;
 
-		static Response *makeErrorResponse(int status, const std::string &errorBody); 
+		static Response *makeErrorResponse(int status); 
 };
