@@ -1,7 +1,7 @@
 #include "Request.hpp"
 #include <iostream>
 #include <cctype>
-#include "../configParser/ParseUtils.hpp"
+#include "../../config/ParseUtils.hpp"
 #include "RequestParser.hpp"
 
 
@@ -15,21 +15,21 @@ void Request::parseRawReq(std::string rawRequest) {
     std::vector<std::string>	headers;
 
     if (separateData.size() < 2)
-		throw (IncompleteRequest);
+		throw (IncompleteRequest());
 	else {
         extractRequestData(separateData[0]);
 		if (method != "POST" && method != "DELETE" && method != "GET")
-			throw (ForbiddenMethod);
+			throw (ForbiddenMethod());
         headers = ParseUtils::splitString(separateData[1], '\n');
         extractHeaders(headers);
         if (separateData.size() == 3) {
             extractBody(separateData[2]);
         } else if (separateData.size() > 3)
-			throw (InvalidRequest);
-		if (method == "POST" && separateData[2].size() < headers["Content-Length"])
-			throw (IncompleteRequest);
-		else if (method == "POST" && separateData[2].size() > headers["Content-Length"])
-			throw (InvalidRequest);
+			throw (InvalidRequest());
+		// if (method == "POST" && separateData[2].size() < this->headers["Content-Length"])
+		// 	throw (IncompleteRequest());
+		// else if (method == "POST" && separateData[2].size() > headers["Content-Length"])
+		// 	throw (InvalidRequest());
     }
 }
 
@@ -37,14 +37,14 @@ std::vector<std::string> Request::splitHeaderFromBody(std::string rawRequest) {
     std::vector<std::string> output;
     size_t delPos = rawRequest.find("\r\n\r\n");
     if (delPos == std::string::npos)
-		throw (IncompleteRequest);
+		throw (IncompleteRequest());
 
     std::string headerBlock = rawRequest.substr(0, delPos);
 
 
     size_t firstCRLF = headerBlock.find("\r\n");
     if (firstCRLF == std::string::npos)
-		throw (InvalidRequest);
+		throw (InvalidRequest());
     else {
     	std::string requestLine = headerBlock.substr(0, firstCRLF);
     	std::string headerLines = headerBlock.substr(firstCRLF + 2);
@@ -63,7 +63,7 @@ void Request::extractRequestData(std::string rawReqData) {
     std::vector<std::string> splitedReqData = ParseUtils::splitString(rawReqData, ' ');
 
     if (splitedReqData.size() < 3)
-		throw (InvalidRequest);
+		throw (InvalidRequest());
     this->method = ParseUtils::trim(splitedReqData[0]);
 	size_t question = splitedReqData[1].find('?');
 	if (question == std::string::npos)
@@ -81,10 +81,10 @@ void	Request::extractQuery(std::string queryString) {
 	std::map<std::string, std::string> outputQuery;
 	std::pair<std::string, std::string> holderQuery;
 
-	for (int i = 0; i < splitedQuery.size(); i++) {
+	for (size_t i = 0; i < splitedQuery.size(); i++) {
 		std::vector<std::string> tmp = ParseUtils::splitString(splitedQuery[i], '=');
 		if (tmp.size() != 2)
-			throw (InvalidRequest);
+			throw (InvalidRequest());
 		holderQuery = std::make_pair(tmp[0], tmp[1]);
 		outputQuery.insert(holderQuery);
 	}
@@ -98,7 +98,7 @@ void Request::extractHeaders(std::vector<std::string> splitedHeaders) {
             continue;
         size_t colon = line.find(':');
         if (colon == std::string::npos)
-			throw (InvalidRequest);
+			throw (InvalidRequest());
         std::string key = ParseUtils::trim(line.substr(0, colon));
         std::string value = ParseUtils::trim(line.substr(colon + 1));
         this->headers.insert(std::make_pair(key, value));
@@ -129,6 +129,7 @@ std::string	Request::getVersion() const {
 std::vector<RequestBody>	Request::getBody() {
 	if (method == "POST")
 		return (RequestParser::ParseBody(*this));
+	throw (ForbiddenMethod());
 }
 
 std::map<std::string, std::string> Request::getQuery() const {

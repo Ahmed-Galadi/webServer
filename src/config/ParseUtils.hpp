@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <cstdlib>
-
 
 
 class ParseUtils {
@@ -16,7 +14,10 @@ class ParseUtils {
 		static std::vector<std::string> splitAndAccumulate(std::vector<std::string> fileData);
 		static std::vector<std::string> splitString(std::string &str, char del);
 		static bool						bracketsCheck(std::vector<std::string> &tokens);
-		static bool						dupsCheck(std::vector<std::string> &tokens);
-		static bool						syntaxError(std::vector<std::string> &tokens);
+		// static bool						dupsCheck(std::vector<std::string> &tokens);
+		// static bool						syntaxError(std::vector<std::string> &tokens);
+		static int 						htoi(const std::string &hexStr);
 		static int						toInt(std::vector<std::string>::iterator it);
+		static std::string				toString(int number);
+		static std::string				trim(const std::string &s);
 };

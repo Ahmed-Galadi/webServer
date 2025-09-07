@@ -1,6 +1,6 @@
 #include "RequestBody.hpp"
 #include <iostream>
-#include "../configParser/ParseUtils.hpp"
+#include "../../config/ParseUtils.hpp"
 #include "RequestParser.hpp"
 
 // setters
@@ -16,7 +16,7 @@ void	RequestBody::setContentType(const std::string &contentType) {
 	this->contentType = contentType;
 }
 
-void	RequestBody::setRawData(const std::vector<uint8_t> &data) {
+void	RequestBody::setRawData(const std::string &data) {
 	this->rawData = data;
 }
 
@@ -37,7 +37,7 @@ std::string	RequestBody::getContentType() const {
 	return (contentType);
 }
 
-std::vector<uint8_t>	RequestBody::getRawData() const {
+std::string	RequestBody::getRawData() const {
 	return (rawData);
 }
 

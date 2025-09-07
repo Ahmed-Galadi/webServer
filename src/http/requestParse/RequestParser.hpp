@@ -7,8 +7,8 @@
 
 class	RequestParser {
 	public:
-		static bool						boundariesError(std::string &rawBody, const std::string &boundary);
-		static void						extractMultiPart(std::vector<RequestBody> &output, const std::string &bodyRawStr, const std::string &boundary, const std::string &type);
+		static void						boundariesError(std::string &rawBody, const std::string &boundary);
+		static void						extractMultiPart(std::vector<RequestBody> &output, const std::string &bodyRawStr, const std::string &boundary);
 		static void						extractEncodedData(RequestBody &rb, const std::string &bodyRawStr, const std::string &type);
 		static std::vector<std::string>	splitBody(const std::string &rawBody, const std::string &boundary);
 		static void						extractOctetStream(RequestBody &rb, const std::string &rawData);

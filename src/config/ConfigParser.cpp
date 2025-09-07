@@ -2,6 +2,7 @@
 #include "ConfigParser.hpp"
 #include "ServerConfig.hpp"
 #include "ParseUtils.hpp"
+#include <cstdlib>
 
 ParsingBlock ConfigParser::makeServerBlock(std::vector<std::string>::iterator &tokens, std::vector<std::string>::iterator tokensEnd) {
     ParsingBlock block;

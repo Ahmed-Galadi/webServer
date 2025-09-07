@@ -6,6 +6,9 @@
 #include <iostream>
 #include <cstring>
 #include <errno.h>
+#include "../http/requestParse/Request.hpp"
+#include "../http/response/HttpMethodHandler.hpp"
+#include "../http/response/Response.hpp"
 
 Client::Client(int fd, ServerConfig* config) 
     : fd(fd), state(READING_REQUEST), request(NULL), response(NULL),
@@ -25,6 +28,14 @@ Client::~Client() {
         delete response;
     }
 }
+
+// --------------------- [rak nsiti hadi wa9ila] ------------------------
+bool Client::isTimedOut() const {
+    // TODO: implement timeout logic properly.
+    // For now return false just to make the linker happy.
+    return false;
+}
+// -------------- [emplimenti had l9lwa ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ ] -----------------------
 
 void Client::handleRead(EventManager& event_mgr) {
     std::cout << "[DEBUG] handleRead called for fd: " << fd << std::endl;
@@ -205,24 +216,23 @@ void Client::buildResponse() {
     }
 
     // Create response from request
-    response = new Response(*request);
+    response = HttpMethodDispatcher::executeHttpMethod(*request);
 
     // Example: set fields
-    response->setVersion("HTTP/1.1");
-    response->setStatus(200);
-    response->setBody("<html><body><h1>Hello World!</h1></body></html>");
+    // response->setVersion("HTTP/1.0");
+    // response->setStatus(200);
+    // response->setBody("<html><body><h1>Hello World!</h1></body></html>");
 
     // Add headers
-    std::map<std::string, std::string> headers;
-    headers["Content-Type"] = "text/html";
-    headers["Content-Length"] = std::to_string(response->getBody().size());
-    headers["Server"] = "MyCppServer/1.0";  // <-- you can later pull from config
-    if (keep_alive) {
-        headers["Connection"] = "keep-alive";
-    } else {
-        headers["Connection"] = "close";
-    }
-    response->setHeaders(headers);
+    // std::map<std::string, std::string> headers;
+    // headers["Content-Type"] = "text/html";
+    // headers["Content-Length"] = std::to_string(response->getBody().size());
+    // headers["Server"] = "MyCppServer/1.0";  // <-- you can later pull from config
+    if (keep_alive)
+        response->setConnection("keep-alive");
+    else
+        response->setConnection("close");
+    // response->setHeaders(headers);
 
     // Convert to raw string for sending
     write_buffer = response->toString();

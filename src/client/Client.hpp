@@ -4,8 +4,8 @@
 #include "../../include/webserv.hpp"
 #include "../config/ServerConfig.hpp"
 #include "../config/LocationConfig.hpp"
-#include "../http/Request.hpp"
-#include "../http/Response.hpp"
+#include "../http/requestParse/Request.hpp"
+#include "../http/response/Response.hpp"
 #include "../server/EventManager.hpp"
 
 class EventManager;

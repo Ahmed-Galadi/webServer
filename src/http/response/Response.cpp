@@ -17,17 +17,17 @@ const std::map<int, std::string> Response::EXIT_CODES = initExitCodes();
 
 // static members
 
-Response	Response::makeErrorResponse(int status, const std::string &errorBody) {
-	Response 							outputResponse;
+Response	*Response::makeErrorResponse(int status, const std::string &errorBody) {
+	Response 							*outputResponse = new Response();
 	std::map<std::string, std::string>	headers;
 	std::pair<std::string, std::string> tmpPair;
 	std::stringstream					ss;
 
-	outputResponse.setStatus(status);
-	outputResponse.setVersion("HTTP/1.0");
+	outputResponse->setStatus(status);
+	outputResponse->setVersion("HTTP/1.0");
 
 	// set body
-	outputResponse.body = errorBody;
+	outputResponse->body = errorBody;
 	ss << errorBody.size();
 	// set Headers
 	tmpPair.first = "Content-Length";
@@ -36,7 +36,7 @@ Response	Response::makeErrorResponse(int status, const std::string &errorBody) {
 	tmpPair.first = "Content-Type";
 	tmpPair.second = "text/plain";
 	headers.insert(tmpPair);
-	outputResponse.setDate();
+	outputResponse->setDate();
 	return (outputResponse);
 }
 

@@ -1,7 +1,7 @@
 # ============ Makefile ============
 NAME = webserv
 CXX = g++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g -MMD 
+CXXFLAGS = -std=c++98 -g -MMD -Wall -Wextra -Werror
 
 SRCDIR = src
 INCDIR = include
