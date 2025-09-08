@@ -14,13 +14,15 @@ static bool isDirectory(const std::string &path) {
 }
 
 Response	*GEThandle::handle(const Request &req) {
-	std::string root = "/www"; // config server root
-	std::string	path = root + req.getURI();
+	std::string root = "www";
+	std::string path = root + req.getURI();
 
-	// check if it is a directory
-	if (isDirectory(path))
-		path += "/index.html";
-	
+	if (req.getURI() == "/") {
+    	path = root + "/index.html";
+	}
+	else if (isDirectory(path)) {
+    	path += "/index.html";
+	}
 	// open file if not open setStatus to 404
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file.is_open())

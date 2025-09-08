@@ -214,137 +214,18 @@ void Client::buildResponse() {
         state = REQUEST_ERROR;
         return;
     }
-
     // Create response from request
     response = HttpMethodDispatcher::executeHttpMethod(*request);
-
-    // Example: set fields
-    // response->setVersion("HTTP/1.0");
-    // response->setStatus(200);
-    // response->setBody("<html><body><h1>Hello World!</h1></body></html>");
-
-    // Add headers
-    // std::map<std::string, std::string> headers;
-    // headers["Content-Type"] = "text/html";
-    // headers["Content-Length"] = std::to_string(response->getBody().size());
-    // headers["Server"] = "MyCppServer/1.0";  // <-- you can later pull from config
     if (keep_alive)
         response->setConnection("keep-alive");
     else
         response->setConnection("close");
-    // response->setHeaders(headers);
-
     // Convert to raw string for sending
     write_buffer = response->toString();
 
     std::cout << "[DEBUG] Response built (" << write_buffer.size() << " bytes):" << std::endl;
     std::cout << "[DEBUG] Response: [" << write_buffer << "]" << std::endl;
 }
-
-// void Client::parseRequest() {
-//     std::cout << "[DEBUG] parseRequest: buffer size = " << read_buffer.size() << std::endl;
-    
-//     // Look for end of HTTP headers (double CRLF)
-//     size_t header_end = read_buffer.find("\r\n\r\n");
-//     if (header_end == std::string::npos) {
-//         std::cout << "[DEBUG] Headers not complete yet (no \\r\\n\\r\\n found)" << std::endl;
-//         return;
-//     }
-    
-//     std::cout << "[DEBUG] Found end of headers at position: " << header_end << std::endl;
-    
-//     // Basic HTTP request parsing
-//     std::string headers = read_buffer.substr(0, header_end);
-//     std::cout << "[DEBUG] Headers: [" << headers << "]" << std::endl;
-    
-//     size_t first_line_end = headers.find("\r\n");
-//     if (first_line_end == std::string::npos) {
-//         std::cout << "[DEBUG] Invalid request: no CRLF in first line" << std::endl;
-//         state = REQUEST_ERROR;
-//         return;
-//     }
-    
-//     std::string request_line = headers.substr(0, first_line_end);
-//     std::cout << "[DEBUG] Request line: [" << request_line << "]" << std::endl;
-    
-//     // Parse method, URI, and version
-//     size_t first_space = request_line.find(' ');
-//     size_t second_space = request_line.find(' ', first_space + 1);
-    
-//     if (first_space == std::string::npos || second_space == std::string::npos) {
-//         std::cout << "[DEBUG] Invalid request line format" << std::endl;
-//         state = REQUEST_ERROR;
-//         return;
-//     }
-    
-//     std::string method = request_line.substr(0, first_space);
-//     std::string uri = request_line.substr(first_space + 1, second_space - first_space - 1);
-//     std::string version = request_line.substr(second_space + 1);
-    
-//     std::cout << "[DEBUG] Parsed - Method: [" << method << "], URI: [" << uri << "], Version: [" << version << "]" << std::endl;
-    
-//     // Create request object (simplified for now)
-//     request = new Request();
-    
-//     // Check for Connection: keep-alive
-//     if (headers.find("Connection: keep-alive") != std::string::npos ||
-//         headers.find("connection: keep-alive") != std::string::npos) {
-//         keep_alive = true;
-//         std::cout << "[DEBUG] Keep-alive connection detected" << std::endl;
-//     } else {
-//         std::cout << "[DEBUG] Connection will be closed after response" << std::endl;
-//     }
-    
-//     state = REQUEST_COMPLETE;
-//     std::cout << "[DEBUG] Request parsing complete!" << std::endl;
-// }
-
-// void Client::buildResponse() {
-//     std::cout << "[DEBUG] Building HTTP response..." << std::endl;
-    
-//     if (!request) {
-//         std::cout << "[DEBUG] Error: no request object" << std::endl;
-//         state = REQUEST_ERROR;
-//         return;
-//     }
-    
-//     // Create response object
-//     response = new Response();
-    
-//     // Build a simple HTTP response
-//     std::string body = "Hello World!";
-    
-//     write_buffer = "HTTP/1.0 200 OK\r\n";
-//     write_buffer += "Content-Type: text/html\r\n";
-//     write_buffer += "Content-Length: ";
-    
-//     // Convert body length to string (C++98 compatible)
-//     std::ostringstream oss;
-//     oss << body.length();
-//     write_buffer += oss.str();
-//     write_buffer += "\r\n";
-    
-//     if (keep_alive) {
-//         write_buffer += "Connection: keep-alive\r\n";
-//     } else {
-//         write_buffer += "Connection: close\r\n";
-//     }
-//     write_buffer += "\r\n";
-//     write_buffer += body;
-    
-//     std::cout << "[DEBUG] Response built (" << write_buffer.size() << " bytes):" << std::endl;
-//     std::cout << "[DEBUG] Response: [" << write_buffer << "]" << std::endl;
-// }
-
-// bool Client::isTimedOut() const {
-//     const time_t TIMEOUT_SECONDS = 30; // 30 second timeout
-//     bool timed_out = (time(NULL) - last_activity) > TIMEOUT_SECONDS;
-//     if (timed_out) {
-//         std::cout << "[DEBUG] Client fd " << fd << " timed out" << std::endl;
-//     }
-//     return timed_out;
-// }
-
 
 
 void Client::modifySocketForWrite(EventManager& event_mgr) {
