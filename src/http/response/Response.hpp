@@ -13,6 +13,7 @@ class	Response {
 		std::string							body;
 		std::string							server;
 		std::string							date;
+		std::string 						reasonPhrase; 
 		int									status;
 
 	public:
@@ -24,6 +25,8 @@ class	Response {
 		void	setBody(const std::string &rawBody);
 		void	setServer(const std::string &srv);
 		void	setDate();
+		void	setReasonPhrase(const std::string &phrase);
+		void 	addHeader(const std::string &key, const std::string &value);
 
 		std::map<std::string, std::string>	getHeaders() const;
 		std::string							getConnection() const;
@@ -32,7 +35,7 @@ class	Response {
 		std::string							getServer() const;
 		std::string							getDate() const;
 		int									getStatus() const;
-
+		std::string 						getReasonPhrase() const;
 		std::string 						toString() const;
 
 		static Response *makeErrorResponse(int status); 

@@ -7,6 +7,8 @@
 class RequestBody {
 	private:
 		std::string							rawData;
+		 
+		std::vector<char> binaryData;  // Binary-safe version (authoritative)
 		std::map<std::string, std::string>	encodData;
 		std::string 						name;
 		std::string 						fileName;
@@ -25,4 +27,13 @@ class RequestBody {
 		std::string							getName() const;
 		std::string							getFileName() const;
 		std::string							getContentType() const;
+
+		void setBinaryData(const std::vector<char>& data);
+    	void setBinaryData(const char* data, size_t size);
+
+	    // BINARY-SAFE: New getters
+    	const std::vector<char>& getBinaryData() const;
+    	std::string getBinaryDataAsString() const;
+    	bool isBinaryData() const;
+    	size_t getDataSize() const;
 };

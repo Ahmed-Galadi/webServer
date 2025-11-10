@@ -1,0 +1,86 @@
+Summary: Fixing Async CGI Implementation in Webserv
+The Problem
+The CGI implementation was synchronous (blocking), which violated the epoll-based asynchronous architecture. When a CGI script was executed, the entire server would block waiting for the script to complete, preventing it from handling other clients.
+
+The Solution
+Converted CGI execution from synchronous to fully asynchronous using epoll in Level-Triggered mode.
+----------------------------------------------------------------------------------------
+Key Issues Fixed
+1. Synchronous Blocking (Main Issue)
+Problem: Used waitpid() and blocking I/O which froze the server
+Fix:
+Used socketpair() for non-blocking communication with CGI process
+Added CGI sockets to epoll for async I/O monitoring
+Track ongoing CGI executions in a state machine
+2. Missing CGI Variables
+Problem: CGI/1.0 compliance required PATH_INFO and PATH_TRANSLATED
+Fix: Added proper parsing and environment variable setup in buildEnv()
+3. Missing chdir() Call
+Problem: CGI scripts couldn't access relative paths
+Fix: Added chdir() to script directory in child process before execve()
+4. EPOLLHUP Mishandling (Critical Bug)
+Problem: Treated EPOLLHUP (normal EOF from CGI) as error, killing process and returning 500
+Fix:
+Separated EPOLLERR (real error) from EPOLLHUP (normal termination)
+Read remaining data before finalizing
+Wait for process to exit naturally instead of killing it
+5. Double Finalization / Segmentation Fault
+Problem: Called finalizeCgiExecution() twice:
+In handleCgiRead() when EOF detected
+In handleCgiEvent() when EPOLLHUP received
+Second call accessed deleted memory → segfault
+Fix: Check if execution still exists in map after handleCgiRead() before finalizing again
+6. Client State Machine Issues
+Problem: After buildResponse() returned for CGI, code still tried to modify socket and change state
+Fix:
+Check waitingForCgi flag and return early
+Let setCgiResponse() handle socket modification and state change
+
+-------------------------------------------------------------------------------
+Architecture Changes
+New Components Added
+CgiExecution struct: Tracks ongoing CGI execution state
+
+PID, socket FD, client pointer, request body, output buffer
+State machine: WRITING_BODY → READING_OUTPUT → COMPLETE
+Static execution map: s_cgiExecutions[fd] → tracks all active CGI processes
+
+Async methods:
+
+startCgiExecution(): Fork, exec, setup socketpair
+handleCgiEvent(): Process epoll events for CGI sockets
+handleCgiWrite(): Write request body to CGI
+handleCgiRead(): Read CGI output
+finalizeCgiExecution(): Reap process, parse output, send response
+checkCgiTimeouts(): Kill timed-out CGI processes (30s)
+Integration Points
+Client: Added eventManager pointer and waitingForCgi flag
+Server event loop: Check CGI executions in epoll events, call checkCgiTimeouts()
+Circular dependency fix: Forward-declared EventManager in Server.hpp
+-------------------------------------------------------------------------------------
+Code Flow
+1. Client receives POST request
+2. buildResponse() detects CGI-enabled location
+3. startCgiExecution():
+   - Fork child process
+   - Child: chdir() to script dir, execve()
+   - Parent: Add socketpair to epoll (EPOLLOUT)
+   - Set client waitingForCgi = true
+4. Server event loop monitors CGI socket:
+   - EPOLLOUT → Write request body to CGI
+   - EPOLLIN → Read CGI output
+   - EPOLLHUP → Finalize (normal completion)
+5. finalizeCgiExecution():
+   - waitpid() to get exit code
+   - Parse CGI output (Status, headers, body)
+   - Call client->setCgiResponse()
+   - setCgiResponse() modifies socket to EPOLLOUT
+6. Client sends response to browser
+----------------------------------------------------------------------------------------
+Result
+✅ Non-blocking CGI execution - server handles multiple clients during CGI processing
+✅ CGI/1.0 compliant - PATH_INFO, PATH_TRANSLATED, chdir()
+✅ Proper exit code handling - 200 OK for success, 500 for non-zero exit
+✅ Timeout protection - 30-second limit
+✅ No segfaults - proper cleanup and state management
+✅ C++98 compliant - no modern C++ features used

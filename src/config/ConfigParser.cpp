@@ -37,8 +37,7 @@ ParsingBlock ConfigParser::makeLocationBlock(std::vector<std::string>::iterator 
 
 LocationConfig		ConfigParser::makeLocationConfig(std::vector<std::string>::iterator &tokens) {
 	if (*tokens != "location") {
-		std::cout << "Error: Can't Make LocationConig" << std::endl;
-		exit(1);
+		throw std::runtime_error("Error: Cannot make LocationConfig - expected 'location' keyword");
 	}
 
 	LocationConfig 	outputLocation;
@@ -61,6 +60,25 @@ LocationConfig		ConfigParser::makeLocationConfig(std::vector<std::string>::itera
 			else if (*(tokens + 1) == "off")
 				outputLocation.setCGI(false);
 		}
+        else if (*tokens == "autoindex") {
+            if (*(tokens + 1) == "on")
+                outputLocation.setAutoIndex(true);
+            else if (*(tokens + 1) == "off")
+                outputLocation.setAutoIndex(false);
+        }
+        else if (*tokens == "client_max_body_size")
+            outputLocation.setClientMaxBodySize(ParseUtils::parseMaxBodySize(*(tokens + 1)));
+        else if (*tokens == "return") {
+            tokens++;
+            if (*tokens != "}") {
+                int code = std::atoi((*tokens).c_str());
+                tokens++;
+                if (*tokens != "}") {
+                    std::string url = *tokens;
+                    outputLocation.setReturn(code, url);
+                }
+            }
+        }
 	}
 	return (outputLocation);
 }
@@ -70,6 +88,7 @@ ServerConfig ConfigParser::makeServerConfig(ParsingBlock servBlock) {
     std::vector<LocationConfig> locations;
     std::map<int, std::string>  errorPages;
     ServerConfig                outputServer;
+    bool                        portSet = false;
 
 std::vector<std::string>::iterator it = serverTokens.begin();
 std::vector<std::string>::iterator end = serverTokens.end();
@@ -90,12 +109,26 @@ while (it != end) {
         continue;
     }
     else if ((it + 1) < end && *it == "port") {
+        if (portSet) {
+            throw std::runtime_error("Error: Duplicate 'port' directive in server block - only one port per server block is allowed");
+        }
         outputServer.setPort(ParseUtils::toInt(it + 1));
+        portSet = true;
         it += 2;
         continue;
     }
     else if ((it + 1) < end && *it == "root") {
         outputServer.setRoot(*(it + 1));
+        it += 2;
+        continue;
+    }
+    else if ((it + 1) < end && *it == "autoindex") {
+        outputServer.setAutoIndex(*(it + 1) == "on" ? true : false);
+        it += 2;
+        continue;
+    }
+    else if ((it + 1) < end && *it == "client_max_body_size") {
+        outputServer.setClientMaxBodySize(ParseUtils::parseMaxBodySize(*(it + 1)));
         it += 2;
         continue;
     }

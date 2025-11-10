@@ -1,0 +1,146 @@
+#include "./POSThandler.hpp"
+#include "../../requestParse/RequestParser.hpp"
+#include <sstream>
+#include <cctype>
+#include <cstddef>
+
+Response* POSThandler::handler(const Request& req, const LocationConfig* location, const ServerConfig* /* serverConfig */) {
+    Response* response = new Response();
+    
+    try {
+        // Validate Content-Length (required in HTTP/1.0)
+        std::map<std::string, std::string> headers = req.getHeaders();
+        bool hasContentLength = false;
+        
+        for (std::map<std::string, std::string>::const_iterator it = headers.begin(); 
+             it != headers.end(); ++it) {
+            if (toLowerCase(it->first) == "content-length") {
+                hasContentLength = true;
+                break;
+            }
+        }
+        
+        if (!hasContentLength) {
+            delete response;
+            return createErrorResponse(411, "Length Required");
+        }
+        
+        // Get Content-Type
+        std::string contentType = getContentType(headers);
+        if (contentType.empty()) {
+            delete response;
+            return createErrorResponse(400, "Bad Request - Missing Content-Type header");
+        }
+        
+        // Check if Content-Type is supported
+        bool isSupportedType = (
+            contentType.find("multipart/form-data") != std::string::npos ||
+            contentType.find("application/x-www-form-urlencoded") != std::string::npos ||
+            contentType.find("application/json") != std::string::npos ||
+            contentType.find("text/plain") != std::string::npos ||
+            contentType.find("application/octet-stream") != std::string::npos
+        );
+        
+        if (!isSupportedType) {
+            delete response;
+            return createErrorResponse(415, "Unsupported Media Type");
+        }
+        
+        // Set response properties
+        response->setVersion(req.getVersion());
+        response->setServer("WebServer/1.0");
+        response->setVersion("HTTP/1.0");
+        response->setDate();
+        response->setConnection("close");
+        
+        std::string uri = req.getURI();
+        std::vector<RequestBody> bodyParts = RequestParser::ParseBody(req);
+        
+        // Route to appropriate handler
+        if (contentType.find("multipart/form-data") != std::string::npos) {
+            // ← UPDATED: Pass location to multipart handler
+            return handleMultipartFormData(req, response, bodyParts, uri, location);
+        }
+        else if (contentType.find("application/x-www-form-urlencoded") != std::string::npos) {
+            return handleFormUrlEncoded(req, response, bodyParts, uri);
+        }
+        else if (contentType.find("application/json") != std::string::npos) {
+            return handleJsonData(req, response, uri);
+        }
+        else if (contentType.find("text/plain") != std::string::npos) {
+            return handlePlainText(req, response, uri);
+        }
+        else if (contentType.find("application/octet-stream") != std::string::npos) {
+            return handleBinaryData(req, response, bodyParts, uri);
+        }
+        else {
+            return handleDefaultPost(req, response, uri);
+        }
+        
+    } catch (const std::exception& e) {
+        delete response;
+        return createErrorResponse(500, "Internal Server Error");
+    }
+}
+
+// ← NEW: Get upload directory from location config
+std::string POSThandler::getUploadDirectory(const LocationConfig* location) const {
+    if (location) {
+        const std::string uploadDir = "/upload";
+        std::string root = location->getRoot();
+        if (!root.empty()) {
+            std::cout << "[DEBUG] Using upload directory from location: " << root << std::endl;
+            return root + uploadDir;
+        }
+    }
+    
+    // Fallback to default
+    std::cout << "[DEBUG] Using default upload directory: ./www/upload" << std::endl;
+    return "./www/upload";
+}
+
+
+
+std::string POSThandler::getContentType(const std::map<std::string, std::string>& headers) {
+    std::map<std::string, std::string>::const_iterator it;
+    for (it = headers.begin(); it != headers.end(); ++it) {
+        std::string headerName = toLowerCase(it->first);
+        if (headerName == "content-type") {
+            return it->second;
+        }
+    }
+    return "";
+}
+
+std::string POSThandler::toLowerCase(const std::string& str) {
+    std::string result = str;
+    for (size_t i = 0; i < result.length(); ++i) {
+        result[i] = std::tolower(static_cast<unsigned char>(result[i]));
+    }
+    return result;
+}
+
+std::string POSThandler::numberToString(size_t number) {
+    std::ostringstream oss;
+    oss << number;
+    return oss.str();
+}
+
+Response* POSThandler::createErrorResponse(int statusCode, const std::string& message) {
+    Response* response = new Response();
+    response->setStatus(statusCode);
+    response->setVersion("HTTP/1.0");
+    response->setServer("WebServer/1.0");
+    response->setDate();
+    response->setConnection("close");
+    
+    std::string body = "<html><body><h1>" + numberToString(statusCode) + " " + message + "</h1></body></html>";
+    response->setBody(body);
+    
+    std::map<std::string, std::string> headers;
+    headers["Content-Type"] = "text/html";
+    headers["Content-Length"] = numberToString(body.length());
+    response->setHeaders(headers);
+    
+    return response;
+}

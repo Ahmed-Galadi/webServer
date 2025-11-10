@@ -1,380 +1,295 @@
 #include "RequestParser.hpp"
 #include "../../config/ParseUtils.hpp"
 #include <iostream>
-#include <map>
-#include <vector>
-#include <string>
 #include <sstream>
 
-// ----- Split body by boundary -----
-std::vector<std::string> RequestParser::splitBody(const std::string &rawBody, const std::string &boundary) {
-    std::vector<std::string> result;
-    if (rawBody.empty() || boundary.empty()) {
-        result.push_back(rawBody);
-        return (result);
+std::vector<RequestBody> RequestParser::parseMultipartFormData(const Request& req, const std::string& contentType) {
+    std::cout << "[DEBUG] Parsing multipart/form-data" << std::endl;
+    
+    // Extract boundary
+    std::string boundary = extractBoundary(contentType);
+    if (boundary.empty()) {
+        std::cout << "[DEBUG] No boundary found in Content-Type" << std::endl;
+        return std::vector<RequestBody>();
     }
-
-    size_t start = 0;
-    size_t pos = rawBody.find(boundary);
-
-    while (pos != std::string::npos) {
-        result.push_back(rawBody.substr(start, pos - start));
-        start = pos + boundary.length();
-        pos = rawBody.find(boundary, start);
+    
+    std::cout << "[DEBUG] Boundary: [" << boundary << "]" << std::endl;
+    
+    // BINARY-SAFE: Use binary data for parsing
+    const std::vector<char>& binaryBody = req.getRawBinaryBody();
+    if (binaryBody.empty()) {
+        std::cout << "[DEBUG] No binary body data available" << std::endl;
+        return std::vector<RequestBody>();
     }
-
-    // Add the final chunk
-    result.push_back(rawBody.substr(start));
-    return (result);
+    
+    std::cout << "[DEBUG] Binary body size: " << binaryBody.size() << " bytes" << std::endl;
+    
+    return parseMultipartBinary(binaryBody, boundary);
 }
 
-// ------------- [Parse Hexadecimal values in [application/x-www-form-urlencoded] ]
-
-void	RequestParser::parseHexa(std::string &hexString) {
-	std::stringstream output;
-
-	for (size_t i = 0; i < hexString.size(); i++) {
-		
-		if (hexString[i] == '%' && (i + 2) < hexString.size()) {
-			std::string tmp;
-			i++;
-			tmp += hexString[i++];
-			tmp += hexString[i];
-			output << static_cast<char>(ParseUtils::htoi(tmp));
-		} else if (hexString[i] == '+') {
-			output << ' ';
-		} else
-			output << hexString[i];
-	}
-	hexString = output.str();
-}
-
-// ----- [Extract application/x-www-form-urlencoded or octet-stream] -----
-void RequestParser::extractEncodedData(RequestBody &rb, const std::string &bodyRawStr, const std::string &type) {
-    std::string rawBody = ParseUtils::trim(bodyRawStr);
-
-    if (type == "x-www-form-urlencoded") {
-        std::map<std::string, std::string> output;
-        std::vector<std::string> pairs = ParseUtils::splitString(rawBody, '&');
-
-		for (size_t i = 0; i < pairs.size(); ++i) {
-    		std::vector<std::string> kv = ParseUtils::splitString(pairs[i], '=');
-   			if (kv.size() != 2) {
-        		std::cerr << "Error: Not valid URL-encoded data!" << std::endl;
-       			throw (Request::InvalidRequest());
-    		}
-			parseHexa(kv[0]);
-			parseHexa(kv[1]);
-    		output[kv[0]] = kv[1];
-		}
-    	rb.setEncodedData(output);
-    } else if (type == "octet-stream")
-        extractOctetStream(rb, rawBody);
-}
-
-
-// ----- [Extract a single multipart body part] -----
-RequestBody RequestParser::extractBodyPart(const std::string &rawBodyPart) {
-    RequestBody output;
-
-    std::vector<std::string> splitHeaderFromData = splitBody(rawBodyPart, "\r\n\r\n");
-    if (splitHeaderFromData.size() < 2)
-		throw (Request::InvalidRequest());
-    std::string headerBlock = splitHeaderFromData[0];
-    std::string body = splitHeaderFromData[1];
-
-    std::vector<std::string> headers = splitBody(headerBlock, "\r\n");
-    for (size_t i = 0; i < headers.size(); ++i) {
-    	std::string &line = headers[i];
-        std::string trimmed = ParseUtils::trim(line);
-
-        if (trimmed.find("Content-Type:") == 0) {
-            output.setContentType(ParseUtils::trim(trimmed.substr(13)));
-        }
-        else if (trimmed.find("Content-Disposition:") == 0) {
-            std::string disp = trimmed.substr(20); // skip "Content-Disposition:"
-            std::vector<std::string> params = ParseUtils::splitString(disp, ';');
-
-            for (size_t j = 0; j < params.size(); ++j) {
-    			std::string &param = params[j];
-                param = ParseUtils::trim(param);
-                if (param.find("name=") == 0) {
-					std::string clean = param.substr(5);
-					if (!clean.empty() && clean[0] == '"' && clean[clean.size() - 1] == '"')  {
-    					clean = clean.substr(1, clean.size() - 2);
-					}
-					output.setName(clean);
-				} else if (param.find("filename=") == 0) {
-					std::string clean = param.substr(9);
-					if (!clean.empty() && clean[0] == '"' && clean[clean.size() - 1] == '"')  {
-    					clean = clean.substr(1, clean.size() - 2);
-					}
-                    output.setFileName(clean);
-				}
-            }
-        }
-    }
-	std::string tmp = ParseUtils::splitString(body, '\r')[0];
-    extractOctetStream(output, tmp);
-
-    return (output);
-}
-
-// parse function helper
-bool	findStr(const std::string &hayStack, const std::string &needle) {
-	for (size_t i = 0; i < hayStack.size(); i++) {
-		for (size_t j = 0; j < needle.size(); j++) {
-			if (hayStack[i + j] != needle[j])
-				break;
-			if (j + 1 == needle.size())
-				return (true);
-		}
-	}
-	return (false);
-}
-
-// *******[ Hepler Function to check boundaries ]***********
-void	RequestParser::boundariesError(std::string &rawBody, const std::string &boundary) {
-	std::vector<std::string> boundaries;
-	std::vector<std::string> splitedBody = splitBody(rawBody, "\r\n");
-
-	for (size_t i = 0; i < splitedBody.size(); i++) {
-		if (findStr(splitedBody[i], boundary))
-			boundaries.push_back(splitedBody[i]);
-	}
-	if (boundaries[0] == boundaries[boundaries.size() - 1]) {
-		std::cout << "Error: multipart boundary incorrect!" << std::endl;
-		throw (Request::InvalidRequest());
-	}
-
-	std::string tmpLastBoundary = boundary + "--";
-	if (boundaries[boundaries.size() - 1] != tmpLastBoundary) {
-		std::cout << "Error: multipart boundary incorrect!" << std::endl;
-		throw (Request::InvalidRequest());
-	}
-	
-}
-
-// ----- [Extract multipart body] -----
-void RequestParser::extractMultiPart(std::vector<RequestBody> &output, const std::string &bodyRawStr, const std::string &boundary) {
-	// boundary check
-    std::vector<std::string> bodyParts = splitBody(bodyRawStr, boundary);
-
-	for (size_t i = 0; i < bodyParts.size(); ++i) {
-    	std::string trimmed = ParseUtils::trim(bodyParts[i]);
-    	if (trimmed.empty() || trimmed == "--")
-        	continue;
-    	output.push_back(extractBodyPart(trimmed));
-	}
-}
-
-// ----- Convert raw string to raw binary -----
-void RequestParser::extractOctetStream(RequestBody &rb, const std::string &rawData) {
-    // std::vector<uint8_t> output;
-    // output.reserve(rawData.size());
-
-    // for (size_t i = 0; i < rawData.size(); i++)
-    //     output.push_back(static_cast<uint8_t>(rawData[i]));
-
-    rb.setRawData(rawData);
-}
-
-// ----- Main body parser -----
-std::vector<RequestBody> RequestParser::ParseBody(const Request &req) {
-    std::vector<RequestBody> output;
-    RequestBody RBHolder;
-    std::string boundary;
-
-    // --- Extract Content-Type ---
+std::vector<RequestBody> RequestParser::ParseBody(const Request& req) {
+    std::vector<RequestBody> bodies;
+    
     std::map<std::string, std::string> headers = req.getHeaders();
-    if (headers.find("Content-Type") == headers.end()) {
-        std::cerr << "ERROR: Cannot parse body without Content-Type" << std::endl;
-        throw (Request::InvalidRequest());
+    std::map<std::string, std::string>::iterator it = headers.find("Content-Type");
+    
+    if (it == headers.end()) {
+        std::cout << "[DEBUG] No Content-Type header found" << std::endl;
+        return bodies;
     }
-
-    std::string contentType = headers["Content-Type"];
-    if (contentType == "application/x-www-form-urlencoded" ||
-        contentType == "application/json" ||
-        contentType == "text/plain") {
-        RBHolder.setContentType(contentType);
-        extractEncodedData(RBHolder, req.getRawBody(), ParseUtils::splitString(contentType, '/')[1]);
-        output.push_back(RBHolder);
-        return (output);
+    
+    std::string contentType = it->second;
+    std::cout << "[DEBUG] Content-Type: " << contentType << std::endl;
+    
+    if (contentType.find("multipart/form-data") != std::string::npos) {
+        return RequestParser::parseMultipartFormData(req, contentType);
+    } else if (contentType.find("application/x-www-form-urlencoded") != std::string::npos) {
+        return RequestParser::parseUrlEncodedData(req);
     }
-
-    // --- Handle multipart/form-data ---
-    std::vector<std::string> parts = ParseUtils::splitString(contentType, ';');
-    if (parts.size() < 2) {
-        std::cerr << "ERROR: Invalid multipart Content-Type" << std::endl;
-        throw (Request::InvalidRequest());
-    }
-
-    std::string typePart = ParseUtils::trim(parts[0]);
-	std::string typePart2 = ParseUtils::trim(parts[1]);
-    std::vector<std::string> boundaryPart = ParseUtils::splitString(typePart2, '=');
-
-    if (typePart == "multipart/form-data" &&
-        boundaryPart.size() == 2 &&
-        ParseUtils::trim(boundaryPart[0]) == "boundary") {
-        RBHolder.setContentType("multipart/form-data");
-        boundary = boundaryPart[1];
-    } else {
-        std::cerr << "ERROR: Invalid multipart Content-Type header" << std::endl;
-        throw (Request::InvalidRequest());
-    }
-
-    extractMultiPart(output, req.getRawBody(), boundary);
-    return (output);
+    
+    std::cout << "[DEBUG] Unsupported Content-Type for parsing" << std::endl;
+    return bodies;
 }
 
 
 
-// #include "RequestParser.hpp"
-// #include "ParseUtils.hpp"
-// #include <map>
+std::vector<RequestBody> RequestParser::parseMultipartBinary(const std::vector<char>& data, const std::string& boundary)
+{
+    std::vector<RequestBody> bodies;
+    
+    std::string fullBoundary = "--" + boundary;
+    std::string endBoundary = "--" + boundary + "--";
+    
+    std::cout << "[DEBUG] Looking for boundary: [" << fullBoundary << "]" << std::endl;
+    std::cout << "[DEBUG] End boundary: [" << endBoundary << "]" << std::endl;
+    
+    // Convert binary data to string for boundary searching (this is safe because boundaries are ASCII)
+    std::string dataStr(data.begin(), data.end());
+    
+    std::vector<size_t> boundaryPositions;
+    
+    // Find all boundary positions
+    size_t pos = 0;
+    while ((pos = dataStr.find(fullBoundary, pos)) != std::string::npos) {
+        boundaryPositions.push_back(pos);
+        std::cout << "[DEBUG] Found boundary at position: " << pos << std::endl;
+        pos += fullBoundary.length();
+    }
+    
+    if (boundaryPositions.size() < 2) {
+        std::cout << "[DEBUG] Not enough boundaries found for multipart data" << std::endl;
+        return bodies;
+    }
+    
+    // Parse each part between boundaries
+    for (size_t i = 0; i < boundaryPositions.size() - 1; ++i) {
+        size_t partStart = boundaryPositions[i] + fullBoundary.length();
+        size_t partEnd = boundaryPositions[i + 1];
+        
+        // Skip CRLF after boundary
+        if (partStart + 2 < data.size() && data[partStart] == '\r' && data[partStart + 1] == '\n') {
+            partStart += 2;
+        }
+        
+        if (partStart >= partEnd) continue;
+        
+        std::cout << "[DEBUG] Parsing part " << i << " from " << partStart << " to " << partEnd << std::endl;
+        
+        RequestBody part = parseMultipartPart(data, partStart, partEnd);
+        if (!part.getName().empty()) {
+            bodies.push_back(part);
+        }
+    }
+    
+    std::cout << "[DEBUG] Parsed " << bodies.size() << " multipart parts" << std::endl;
+    return bodies;
+}
 
-// std::vector<std::string> RequestParser::splitBody(const std::string &rawBody, const std::string &boundary) {
-//     std::vector<std::string> result;
-// 	if (rawBody.empty() || boundary.empty()) {
-// 		result.push_back(rawBody);
-// 		return (result);
-// 	}
-//     size_t start = 0;
-//     size_t pos = rawBody.find(boundary);
+RequestBody RequestParser::parseMultipartPart(const std::vector<char>& data, size_t start, size_t end) {
+    RequestBody body;
+    
+    if (start >= end || end > data.size()) {
+        std::cout << "[DEBUG] Invalid part boundaries" << std::endl;
+        return body;
+    }
+    
+    // Find headers end (\r\n\r\n) within this part
+    std::string partStr(data.begin() + start, data.begin() + end);
+    size_t headersEnd = partStr.find("\r\n\r\n");
+    
+    if (headersEnd == std::string::npos) {
+        std::cout << "[DEBUG] No headers separator found in part" << std::endl;
+        return body;
+    }
+    
+    std::string headersStr = partStr.substr(0, headersEnd);
+    std::cout << "[DEBUG] Part headers: [" << headersStr << "]" << std::endl;
+    
+    // Parse headers
+    parsePartHeaders(headersStr, body);
+    
+    // Extract binary data
+    size_t dataStart = start + headersEnd + 4; // +4 for \r\n\r\n
+    size_t dataEnd = end;
+    
+    // Remove trailing CRLF before next boundary
+    if (dataEnd >= 2 && data[dataEnd - 2] == '\r' && data[dataEnd - 1] == '\n') {
+        dataEnd -= 2;
+    }
+    
+    if (dataStart < dataEnd) {
+        size_t dataSize = dataEnd - dataStart;
+        std::cout << "[DEBUG] Part data size: " << dataSize << " bytes" << std::endl;
+        
+        // BINARY-SAFE: Store the data properly
+        body.setBinaryData(&data[dataStart], dataSize);
+        
+        std::cout << "[DEBUG] Stored " << body.getDataSize() << " bytes for field: " << body.getName() << std::endl;
+        
+        if (!body.getFileName().empty()) {
+            std::cout << "[DEBUG] File upload - " << body.getFileName() << " (" << body.getContentType() << ")" << std::endl;
+        }
+    }
+    
+    return body;
+}
 
-//     while (pos != std::string::npos) {
-//         result.push_back(rawBody.substr(start, pos - start));
-//         start = pos + boundary.length();
-//         pos = rawBody.find(boundary, start);
-//     }
+void RequestParser::parsePartHeaders(const std::string& headersStr, RequestBody& body) {
+    std::vector<std::string> headerLines = split(headersStr, "\r\n");
+    
+    for (size_t i = 0; i < headerLines.size(); ++i) {
+        std::string line = ParseUtils::trim(headerLines[i]);
+        if (line.empty()) continue;
+        
+        std::cout << "[DEBUG] Processing header: [" << line << "]" << std::endl;
+        
+        if (line.find("Content-Disposition:") == 0) {
+            parseContentDisposition(line, body);
+        } else if (line.find("Content-Type:") == 0) {
+            parseContentType(line, body);
+        }
+    }
+}
 
-//     result.push_back(rawBody.substr(start));
-//     return result;
-// }
+void RequestParser::parseContentDisposition(const std::string& header, RequestBody& body) {
+    // Example: Content-Disposition: form-data; name="file"; filename="test.jpg"
+    
+    size_t namePos = header.find("name=\"");
+    if (namePos != std::string::npos) {
+        namePos += 6; // Skip name="
+        size_t nameEnd = header.find("\"", namePos);
+        if (nameEnd != std::string::npos) {
+            std::string name = header.substr(namePos, nameEnd - namePos);
+            body.setName(name);
+            std::cout << "[DEBUG] Field name: [" << name << "]" << std::endl;
+        }
+    }
+    
+    size_t filenamePos = header.find("filename=\"");
+    if (filenamePos != std::string::npos) {
+        filenamePos += 10; // Skip filename="
+        size_t filenameEnd = header.find("\"", filenamePos);
+        if (filenameEnd != std::string::npos) {
+            std::string filename = header.substr(filenamePos, filenameEnd - filenamePos);
+            body.setFileName(filename);
+            std::cout << "[DEBUG] Filename: [" << filename << "]" << std::endl;
+        }
+    }
+}
 
-// void	RequestParser::extractEncodedData(RequestBody &rb ,const std::string &bodyRawStr, const std::string &type) {
-// 	std::string	rawBody = ParseUtils::trim(bodyRawStr);
-// 	std::map<std::string, std::string> output;
+void RequestParser::parseContentType(const std::string& header, RequestBody& body) {
+    // Example: Content-Type: image/jpeg
+    
+    size_t colonPos = header.find(":");
+    if (colonPos != std::string::npos && colonPos + 1 < header.length()) {
+        std::string contentType = ParseUtils::trim(header.substr(colonPos + 1));
+        body.setContentType(contentType);
+        std::cout << "[DEBUG] Content-Type: [" << contentType << "]" << std::endl;
+    }
+}
 
-// 	if (type == "x-www-form-urlencoded") {
-// 		std::vector<std::string> splitedRawEncodedData  = ParseUtils::splitString(rawBody, '&');
-// 		for (int i = 0; i < splitedRawEncodedData.size(); i++) {
-// 			std::vector<std::string> holder = ParseUtils::splitString(splitedRawEncodedData[i], '=');
-// 			if (holder.size() != 2) {
-// 				std::cout << "Error: Not Valid Encoded data!" << std::endl;
-// 				exit(1);
-// 			}
-// 			std::pair<std::string, std::string> tmp = std::make_pair(holder[0], holder[1]);
-// 			output.insert(tmp);
-// 		}
-// 		rb.setEncodedData(output);
-// 	} else if (type == "octet-stream")
-// 		extractOctetStream(rb, rawBody);
-// }
+std::string RequestParser::extractBoundary(const std::string& contentType) {
+    size_t boundaryPos = contentType.find("boundary=");
+    if (boundaryPos == std::string::npos) {
+        return "";
+    }
+    
+    boundaryPos += 9; // Skip "boundary="
+    
+    // Handle quoted boundary
+    std::string boundary;
+    if (boundaryPos < contentType.length()) {
+        if (contentType[boundaryPos] == '"') {
+            // Quoted boundary
+            boundaryPos++; // Skip opening quote
+            size_t endPos = contentType.find('"', boundaryPos);
+            if (endPos != std::string::npos) {
+                boundary = contentType.substr(boundaryPos, endPos - boundaryPos);
+            }
+        } else {
+            // Unquoted boundary - take until semicolon or end
+            size_t endPos = contentType.find(';', boundaryPos);
+            if (endPos == std::string::npos) {
+                boundary = contentType.substr(boundaryPos);
+            } else {
+                boundary = contentType.substr(boundaryPos, endPos - boundaryPos);
+            }
+            boundary = ParseUtils::trim(boundary);
+        }
+    }
+    
+    return boundary;
+}
 
-// RequestBody	RequestParser::extractBodyPart(const std::string &rawBodyPart) {
-// 	RequestBody		output = RequestBody();
-// 	std::vector<std::string> splitHeaderFromData = splitBody(rawBodyPart, "\r\n\r\n");
-// 	std::vector<std::string> headers = splitBody(splitHeaderFromData[0], "\r\n");
-// 	std::vector<std::string> headersTokens = ParseUtils::splitAndAccumulate(headers);
-// 	for (int i = 0; i < headersTokens.size(); i++) {
-// 		if (headersTokens[i] == "Content-Type:" && (i++)) {
-// 			if (headersTokens[i] == "image/png")
-// 				output.setContentType("image/png");
-// 			else if (headersTokens[i] == "text/plain")
-// 				output.setContentType("text/plain");
-// 			else {
-// 				std::cout << "Error: Content-Type: invalid body part!" << std::endl;
-// 				exit(1);
-// 			}
-// 		} else if (headersTokens[i] == "Content-Disposition:" && (i++)) {
-// 			if (headersTokens[i] == "form-data;" && (i++)) {
-// 				for (;headersTokens[i] != "Content-Type:"; i++) {
-// 					std::vector<std::string> splitkeyVal = ParseUtils::splitString(headersTokens[i], '=');
-// 					if (splitkeyVal[0] == "name")
-// 						output.setName(splitkeyVal[1]);
-// 					else if (splitkeyVal[0] == "filename")
-// 						output.setFileName(splitkeyVal[1]);
-// 					else {
-// 						std::cout << "Error: Content-Disposition: invalid body part!" << std::endl;
-// 						exit(1);
-// 					}
-// 				}
-// 			} else {
-// 				std::cout << "Error: invalid body part!" << std::endl;
-// 				exit(1);
-// 			}
-// 		}
-// 		i++;
-// 	}
-// 	std::string body = headers[1];
-// 	extractOctetStream(output, body);
-// }
+std::vector<RequestBody> RequestParser::parseUrlEncodedData(const Request& req) {
+    std::vector<RequestBody> bodies;
+    
+    std::string bodyData = req.getRawBody();
+    std::vector<std::string> pairs = split(bodyData, "&");
+    
+    for (size_t i = 0; i < pairs.size(); ++i) {
+        std::vector<std::string> keyValue = split(pairs[i], "=");
+        if (keyValue.size() == 2) {
+            RequestBody body;
+            body.setName(urlDecode(keyValue[0]));
+            body.setRawData(urlDecode(keyValue[1]));
+            bodies.push_back(body);
+        }
+    }
+    
+    return bodies;
+}
 
-// void	RequestParser::extractMultiPart(std::vector<RequestBody> &output,const std::string &bodyRawStr, const std::string &boundary, const std::string &type) {
-// 	std::vector<std::string> bodyParts = splitBody(bodyRawStr, boundary);
+std::string RequestParser::urlDecode(const std::string& encoded) {
+    std::string decoded;
+    for (size_t i = 0; i < encoded.length(); ++i) {
+        if (encoded[i] == '%' && i + 2 < encoded.length()) {
+            // Convert hex to char
+            std::string hex = encoded.substr(i + 1, 2);
+            char c = static_cast<char>(std::strtol(hex.c_str(), NULL, 16));
+            decoded += c;
+            i += 2;
+        } else if (encoded[i] == '+') {
+            decoded += ' ';
+        } else {
+            decoded += encoded[i];
+        }
+    }
+    return decoded;
+}
 
-// 	for (int i = 0; (i < bodyParts.size()) && (bodyParts[i] != "--"); i++)
-// 		output.push_back(extractBodyPart(bodyParts[i]));
-// }
-
-// void	RequestParser::extractOctetStream(RequestBody &rb, const std::string &rawData) {
-// 	std::vector<uint8_t> output;
-
-// 	for (int i = 0; i < rawData.size(); i++)
-// 		output.push_back(static_cast<uint8_t>(rawData[i]));
-// 	rb.setRawData(output);
-// }
-
-// std::vector<RequestBody> RequestParser::ParseBody(const Request &req) {
-// 	std::vector<RequestBody>				output;
-// 	RequestBody								RBHolder = RequestBody();
-// 	std::string								boundary;
-// 	// ----- extract meta data --------
-// 		// cehck if [Content-Type] exists first
-// 	std::map<std::string, std::string>		headers = req.getHeaders();
-// 	if (headers.find("Content-Type") == headers.end()) {
-// 		std::cout << "ERROR: can't Parse body without [Content-Type]" << std::endl;
-// 		exit(1);
-// 	}
-// 		// check if [Content-Type] is not multipart and assign it else split [Content-Type] and extract the boundary
-// 	if (headers["Content-Type"] == "application/x-www-form-urlencoded"
-// 		|| headers["Content-Type"] == "application/json"
-// 		|| headers["Content-Type"] == "text/plain")
-// 		RBHolder.setContentType(headers["Content-Type"]);
-// 	else {
-// 		std::vector<std::string> spllitedContentType = ParseUtils::splitString(headers["Content-Type"], ';');
-// 		if (spllitedContentType.size() != 2) {
-// 			std::cout << "ERROR: invalid two args content type" << std::endl;
-// 			exit(1);
-// 		}
-		
-// 		std::vector<std::string> splitBoundary = ParseUtils::splitString(spllitedContentType[0], '=');
-// 		if (splitBoundary.size() != 2) {
-// 			std::cout << "ERROR: [Content-Type] boundary is not set" << std::endl;
-// 			exit(0);
-// 		}
-// 		if (ParseUtils::trim(spllitedContentType[0]) == "multipart/form-data;" && ParseUtils::trim(splitBoundary[0]) == "Boundary") {
-// 			RBHolder.setContentType("multipart/form-data");
-// 			boundary = splitBoundary[1];
-// 		} else {
-// 			std::cout << "ERROR: [Content-Type] is not valid" << std::endl;
-// 			exit(1);
-// 		}
-// 	}
-// 	// --------------------------------
-// 	// ----------- extract body data --------------------
-// 	std::string tmp = RBHolder.getContentType();
-// 	std::string type1 = ParseUtils::splitString(tmp, '/')[0];
-// 	std::string type2 = ParseUtils::splitString(tmp, '/')[1];
-// 	if (type1 == "application") {
-// 		RequestParser::extractEncodedData(RBHolder ,req.getRawBody(), type2);
-// 		output.push_back(RBHolder);
-// 		return (output);
-// 	}
-// 	else if (type1 == "multipart" && !boundary.empty())
-// 		RequestParser::extractMultiPart(output,req.getRawBody(), boundary, type2);
-// 	// --------------------------------
-// 	// ------------ [ Final Return ] ---------------
-// 	return ;
-// }
+// Helper function for splitting strings
+std::vector<std::string> RequestParser::split(const std::string& str, const std::string& delimiter) {
+    std::vector<std::string> tokens;
+    size_t start = 0;
+    size_t end = str.find(delimiter);
+    
+    while (end != std::string::npos) {
+        tokens.push_back(str.substr(start, end - start));
+        start = end + delimiter.length();
+        end = str.find(delimiter, start);
+    }
+    
+    tokens.push_back(str.substr(start));
+    return tokens;
+}

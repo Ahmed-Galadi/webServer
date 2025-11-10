@@ -20,4 +20,6 @@ class ParseUtils {
 		static int						toInt(std::vector<std::string>::iterator it);
 		static std::string				toString(int number);
 		static std::string				trim(const std::string &s);
+		static size_t					parseMaxBodySize(const std::string &value);
+		static size_t 					parseMaxBodySize(size_t value);
 };

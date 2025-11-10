@@ -56,7 +56,7 @@ void EventManager::modifySocket(int fd, void* data, uint32_t event_flags)
     event.events = event_flags;
     event.data.ptr = data;  // Only set the pointer
     
-    std::cout << "[DEBUG] Modifying socket fd=" << fd << " with events=" << event_flags << std::endl;
+    // std::cout << "[DEBUG] Modifying socket fd=" << fd << " with events=" << event_flags << std::endl;
     
     if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event) == -1) {
         std::cerr << "[ERROR] Failed to modify socket " << fd << " in epoll: " 
@@ -64,21 +64,21 @@ void EventManager::modifySocket(int fd, void* data, uint32_t event_flags)
         throw std::runtime_error("Failed to modify socket in epoll");
     }
     
-    std::cout << "[DEBUG] Successfully modified socket " << fd << " in epoll" << std::endl;
+    // std::cout << "[DEBUG] Successfully modified socket " << fd << " in epoll" << std::endl;
 }
 
 int EventManager::waitForEvents(epoll_event* event_buffer, int timeout)
 {
-    std::cout << "[DEBUG] Calling epoll_wait with timeout=" << timeout << std::endl;
+   // std::cout << "[DEBUG] Calling epoll_wait with timeout=" << timeout << std::endl;
     int result = epoll_wait(epoll_fd, event_buffer, max_events, timeout);
-    std::cout << "[DEBUG] epoll_wait returned: " << result << std::endl;
+    // std::cout << "[DEBUG] epoll_wait returned: " << result << std::endl;
     
-    if (result > 0) {
-        for (int i = 0; i < result; ++i) {
-            std::cout << "[DEBUG] Event " << i << ": events=" << event_buffer[i].events 
-                      << ", ptr=" << event_buffer[i].data.ptr << std::endl;
-        }
-    }
+    // if (result > 0) {
+    //     for (int i = 0; i < result; ++i) {
+    //         std::cout << "[DEBUG] Event " << i << ": events=" << event_buffer[i].events 
+    //                   << ", ptr=" << event_buffer[i].data.ptr << std::endl;
+    //     }
+    // }
     
     return result;
 }

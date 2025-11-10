@@ -1,7 +1,7 @@
 # ============ Makefile ============
 NAME = webserv
 CXX = g++
-CXXFLAGS = -std=c++98 -g -MMD #-Wall -Wextra -Werror
+CXXFLAGS = -std=c++98 -g -MMD -Wall -Wextra -Werror
 
 SRCDIR = src
 INCDIR = include
@@ -20,7 +20,19 @@ SOURCES = $(SRCDIR)/main.cpp \
 		  $(SRCDIR)/http/requestParse/RequestBody.cpp \
 		  $(SRCDIR)/http/requestParse/RequestParser.cpp \
           $(SRCDIR)/http/response/Response.cpp \
-		  $(SRCDIR)/http/response/HttpMethodhandler.cpp
+		  $(SRCDIR)/http/response/HttpMethodhandler.cpp \
+		  $(SRCDIR)/http/httpMethods/post/POSThandle_form.cpp \
+		  $(SRCDIR)/http/httpMethods/post/POSThandle_json.cpp \
+		  $(SRCDIR)/http/httpMethods/post/POSThandle_multipart.cpp \
+		  $(SRCDIR)/http/httpMethods/post/POSThandle_others.cpp \
+		  $(SRCDIR)/http/httpMethods/post/POSThandler.cpp \
+		  $(SRCDIR)/http/httpMethods/utils/MimeType.cpp \
+		  $(SRCDIR)/http/httpMethods/utils/FileHandler.cpp \
+		  $(SRCDIR)/http/httpMethods/get/GEThandler.cpp \
+		  $(SRCDIR)/http/httpMethods/delete/DELETEhandler.cpp \
+		  $(SRCDIR)/http/httpMethods/cgi/CGIhandler.cpp \
+
+
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 DEPFILES = $(OBJECTS:.o=.d)
 

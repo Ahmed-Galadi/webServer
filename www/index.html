@@ -1,115 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>🚀 WebServ Server</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Tahoma, sans-serif;
-      background: linear-gradient(135deg, #1e3c72, #2a5298);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-    .container {
-      text-align: center;
-      animation: fadeIn 2s ease-in-out;
-    }
-    h1 {
-      font-size: 3em;
-      margin-bottom: 0.2em;
-      animation: bounce 2s infinite;
-    }
-    .status {
-      font-size: 1.3em;
-      margin-bottom: 1.5em;
-      font-weight: bold;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-      text-align: left;
-      display: inline-block;
-    }
-    li {
-      margin: 0.5em 0;
-      font-size: 1.1em;
-    }
-    .check {
-      color: #00ff88;
-    }
-    .pending {
-      color: #ffcc00;
-    }
-    button {
-      margin-top: 2em;
-      padding: 0.7em 1.5em;
-      border: none;
-      border-radius: 8px;
-      background: #00c3ff;
-      color: #fff;
-      font-size: 1em;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover {
-      background: #009ac7;
-      transform: scale(1.05);
-    }
-    @keyframes bounce {
-      0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-      40% {transform: translateY(-20px);}
-      60% {transform: translateY(-10px);}
-    }
-    @keyframes fadeIn {
-      from {opacity: 0;}
-      to {opacity: 1;}
-    }
-    .rocket {
-      position: absolute;
-      bottom: -100px;
-      font-size: 3em;
-      animation: launch 6s linear infinite;
-    }
-    @keyframes launch {
-      from {bottom: -100px; left: 20%;}
-      to {bottom: 110%; left: 80%;}
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv - Home</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 50px;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 {
+            color: #667eea;
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 1.3em;
+            margin-bottom: 40px;
+        }
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .nav-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .nav-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+        }
+        .nav-card .icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        .nav-card h3 {
+            margin-bottom: 10px;
+        }
+        .nav-card p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+        .info-box li {
+            margin: 8px 0;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🚀 WebServ Server</h1>
-    <p class="status">Status: <span style="color:#00ff88;">Server is running successfully!</span></p>
-    <p>Welcome to our <strong>WebServ</strong> implementation.<br>
-    This page verifies that the server is alive and kicking! ⚡</p>
-    <h2>Features to Test:</h2>
-    <ul>
-      <li class="check">✅ Basic HTTP server functionality</li>
-      <li class="pending">⏳ Static file serving (to be implemented)</li>
-      <li class="pending">⏳ CGI support (to be implemented)</li>
-      <li class="pending">⏳ Configuration parsing (to be implemented)</li>
-      <li class="pending">⏳ Error page handling (to be implemented)</li>
-    </ul>
-    <button onclick="party()">🎉 Celebrate</button>
-  </div>
-  <div class="rocket">🚀</div>
-  <script>
-    function party() {
-      const colors = ["#ff0000", "#00ff00", "#00c3ff", "#ffcc00", "#ff00ff"];
-      const body = document.body;
-      let i = 0;
-      const interval = setInterval(() => {
-        body.style.background = colors[i % colors.length];
-        i++;
-        if (i > 15) clearInterval(interval);
-      }, 200);
-      alert("WebServ is running! 🚀🔥");
-    }
-  </script>
+    <div class="container">
+        <h1>🚀 Webserv</h1>
+        <p class="subtitle">HTTP/1.0 Web Server - Testing Dashboard</p>
+
+        <div class="nav-grid">
+            <a href="/test_upload.html" class="nav-card">
+                <div class="icon">📤</div>
+                <h3>POST Testing</h3>
+                <p>Test all POST request types</p>
+            </a>
+
+            <a href="/cgi-bin/echo.js" class="nav-card">
+                <div class="icon">⚙️</div>
+                <h3>CGI Test</h3>
+                <p>Test CGI functionality</p>
+            </a>
+
+            <a href="/upload/" class="nav-card">
+                <div class="icon">📁</div>
+                <h3>View Uploads</h3>
+                <p>Browse uploaded files</p>
+            </a>
+
+            <a href="/test/" class="nav-card">
+                <div class="icon">🧪</div>
+                <h3>Test Pages</h3>
+                <p>Various test scenarios</p>
+            </a>
+        </div>
+
+        <div class="info-box">
+            <h3>📋 Quick Reference</h3>
+            <ul>
+                <li><strong>Main Server:</strong> http://localhost:8080</li>
+                <li><strong>CGI Only:</strong> http://localhost:4040</li>
+                <li><strong>C++ Only:</strong> http://localhost:3000</li>
+                <li><strong>Max Upload:</strong> 10MB</li>
+                <li><strong>Protocol:</strong> HTTP/1.0</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h3>🧪 Quick Tests</h3>
+            <ul>
+                <li><strong>GET:</strong> <code>curl http://localhost:8080/</code></li>
+                <li><strong>POST Form:</strong> <code>curl -d "name=test" http://localhost:8080/form-submit</code></li>
+                <li><strong>POST File:</strong> <code>curl -F "file=@test.txt" http://localhost:8080/upload</code></li>
+                <li><strong>POST JSON:</strong> <code>curl -H "Content-Type: application/json" -d '{"test":"data"}' http://localhost:8080/api/data</code></li>
+                <li><strong>CGI:</strong> <code>curl http://localhost:8080/cgi-bin/echo.js?name=test</code></li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 30px; color: #999; font-size: 0.9em;">
+            <p>Webserv v1.0 | Built with C++98</p>
+        </div>
+    </div>
 </body>
 </html>

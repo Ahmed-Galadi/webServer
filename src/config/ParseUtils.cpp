@@ -33,8 +33,7 @@ int		ParseUtils::htoi(const std::string &hexStr) {
 
 std::vector<std::string> ParseUtils::readFile(std::string fileName) {
 	if (fileName.empty()) {
-		std::cout << "Error: Enter config file!" << std::endl;
-		exit(1);
+		throw std::runtime_error("Error: Config file name is empty");
 	}
 
 	std::ifstream				inputFile(fileName.c_str());
@@ -42,8 +41,7 @@ std::vector<std::string> ParseUtils::readFile(std::string fileName) {
 	std::vector<std::string>	fileData;
 
 	if (!inputFile.is_open()) {
-		std::cout << "Error: Can't open file!" << std::endl;
-		exit(1);
+		throw std::runtime_error("Error: Cannot open config file: " + fileName);
 	}
 	while (std::getline(inputFile, line))
 		fileData.push_back(line);
@@ -107,6 +105,26 @@ int		ParseUtils::toInt(std::vector<std::string>::iterator it) {
 	stream >> output;
 
 	if (stream.fail() || !stream.eof())
-		exit(1);
+		throw std::runtime_error("Error: Invalid integer value in config: " + *it);
 	return (output);
 }
+
+size_t ParseUtils::parseMaxBodySize(const std::string &value)
+{
+	std::string num = value;
+	size_t multiplier = 1;
+	char unit = value[value.size() - 1];
+
+	if (unit == 'k' || unit == 'K')
+	{
+		multiplier = 1024;
+		num = value.substr(0, value.size() - 1);
+	}
+	else if (unit == 'm' || unit == 'M')
+	{
+		multiplier = 1024 * 1024;
+		num = value.substr(0, value.size() - 1);
+	}
+	return static_cast<size_t>(std::atoi(num.c_str())) * multiplier;
+}
+

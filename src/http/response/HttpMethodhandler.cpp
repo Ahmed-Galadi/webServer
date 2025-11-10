@@ -4,81 +4,344 @@
 #include <sstream>
 #include <sys/stat.h>
 #include "Response.hpp"
+#include "../../config/ServerConfig.hpp"
 #include "../../config/ParseUtils.hpp"
+#include "../httpMethods/post/POSThandler.hpp"
+#include "../httpMethods/get/GEThandler.hpp"
+#include "../httpMethods/delete/DELETEhandler.hpp"
+#include "../httpMethods/cgi/CGIhandler.hpp"
+
+// ============================================
+// Helper function to check if URI is an upload/API endpoint
+// ============================================
+static bool isUploadEndpoint(const std::string& uri, const LocationConfig* location) {
+    std::string locationPath = location->getPath();
+    
+    // Exact match with location path = it's an endpoint
+    // Example: /upload-image matches location /upload-image
+    if (uri == locationPath) {
+        return true;
+    }
+    
+    // URI without trailing slash matches location with trailing slash
+    // Example: /upload matches location /upload/
+    if (locationPath.length() > 1 && 
+        locationPath[locationPath.length() - 1] == '/' &&
+        uri == locationPath.substr(0, locationPath.length() - 1)) {
+        return true;
+    }
+    
+    // Location without trailing slash matches URI with trailing slash
+    // Example: /upload/ matches location /upload
+    if (uri.length() > 1 && 
+        uri[uri.length() - 1] == '/' &&
+        locationPath == uri.substr(0, uri.length() - 1)) {
+        return true;
+    }
+    
+    return false;
+}
+
+static bool hasFileExtension(const std::string& uri) {
+    size_t lastDot = uri.find_last_of('.');
+    size_t lastSlash = uri.find_last_of('/');
+    
+    // Has extension after last slash
+    return (lastDot != std::string::npos && 
+            (lastSlash == std::string::npos || lastDot > lastSlash));
+}
+
+// ============================================
+// Helper Functions
+// ============================================
 
 static bool isDirectory(const std::string &path) {
-	struct stat s;
-	if (stat(path.c_str(), &s))
-		return (S_ISDIR(s.st_mode));
-	return (false);
+    struct stat s;
+    if (stat(path.c_str(), &s) == 0) {
+        return S_ISDIR(s.st_mode);
+    }
+    return false;
 }
 
-Response	*GEThandle::handle(const Request &req) {
-	std::string root = "www";
-	std::string path = root + req.getURI();
-
-	if (req.getURI() == "/") {
-    	path = root + "/index.html";
-	}
-	else if (isDirectory(path)) {
-    	path += "/index.html";
-	}
-	// open file if not open setStatus to 404
-	std::ifstream file(path.c_str(), std::ios::binary);
-	if (!file.is_open())
-		return (Response::makeErrorResponse(404));
- 
-	// read actual file and gather the content and content length 
-	std::ostringstream bodyBuffer;
-	bodyBuffer << file.rdbuf();
-
-	std::string responseBody = bodyBuffer.str();
-	std::pair<std::string, std::string> contentLength("Content-Length", ParseUtils::toString(responseBody.size()));
-	std::pair<std::string, std::string> contentType("Content-Type", "text/html");
-	std::map<std::string, std::string> resHeader;
-	resHeader.insert(contentLength);
-	resHeader.insert(contentType);
-
-	// construct the response
-	Response *outputRes = new Response();
-	outputRes->setStatus(200);
-	outputRes->setServer("MyCppServer/1.0");
-	outputRes->setVersion(req.getVersion());
-	outputRes->setHeaders(resHeader);
-	outputRes->setBody(responseBody);
-
-	return (outputRes);
+static bool fileExists(const std::string &path) {
+    struct stat buffer;
+    return (stat(path.c_str(), &buffer) == 0 && S_ISREG(buffer.st_mode));
 }
 
-Response	*POSThandle::handle(const Request &req) {
-	// TO DO
-	(void)req;
-	Response *outputResponse = new Response();
-	return (outputResponse);
+static std::string resolveFilePath(const std::string& uri, 
+                                   const LocationConfig* location,
+                                   const ServerConfig& serverConfig) {
+    // Get root from location, fallback to server root
+    std::string root = location->getRoot();
+    if (root.empty()) {
+        root = serverConfig.getRoot();
+    }
+    
+    // Remove location path prefix from URI
+    std::string locationPath = location->getPath();
+    std::string relativePath = uri;
+    
+    if (uri.find(locationPath) == 0) {
+        relativePath = uri.substr(locationPath.length());
+    }
+    
+    // Build full path
+    std::string fullPath = root;
+    if (!relativePath.empty() && relativePath != "/" && relativePath[0] != '/') {
+        fullPath += "/";
+    }
+    fullPath += relativePath;
+    
+    // DON'T append index here - let the method handler decide
+    // This allows proper 403 handling when directory exists but index doesn't
+    if (isDirectory(fullPath)) {
+        if (fullPath[fullPath.length() - 1] != '/') {
+            fullPath += "/";
+        }
+    }
+    
+    std::cout << "[DEBUG] Resolved path: " << fullPath << std::endl;
+    return fullPath;
 }
 
-Response	*DELETEhandle::handle(const Request &req) {
-	// TO DO
-	(void)req;
-	Response *outputResponse = new Response();
-	return (outputResponse);
+static bool isCgiByExtension(const std::string& uri) {
+    // Strip query string first
+    std::string uriPath = uri;
+    size_t queryPos = uriPath.find('?');
+    if (queryPos != std::string::npos) {
+        uriPath = uriPath.substr(0, queryPos);
+    }
+    
+    const char* extensions[] = {".php", ".py", ".js", ".rb", ".pl", ".cgi", NULL};
+    
+    for (int i = 0; extensions[i] != NULL; ++i) {
+        std::string ext = extensions[i];
+        if (uriPath.length() >= ext.length()) {
+            if (uriPath.substr(uriPath.length() - ext.length()) == ext) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
+// ============================================
+// HTTP Method Dispatcher - Configuration-Based
+// ============================================
 
-// -----------[Method Response Dispatcher]------------
-Response	*HttpMethodDispatcher::executeHttpMethod(const Request &request) {
-	HttpMethodHandler 	*handler = NULL;
+Response* HttpMethodDispatcher::executeHttpMethod(const Request &request, 
+                                                   const ServerConfig &serverConfig) {
+    std::string method = request.getMethod();
+    std::string uri = request.getURI();
+    
+    std::cout << "[DEBUG] Executing HTTP method: " << method << " for URI: " << uri << std::endl;
+    
+    // ============================================
+    // STEP 1: Find matching location from config
+    // ============================================
+    const LocationConfig* location = serverConfig.findLocation(uri);
+    
+    if (!location) {
+        std::cout << "[DEBUG] No location match found for: " << uri << std::endl;
+        return Response::makeErrorResponse(404);
+    }
+    
+    std::cout << "[DEBUG] Matched location: " << location->getPath() << std::endl;
+    
+    // ============================================
+    // STEP 1.5: Check if location has a return directive
+    // ============================================
+    if (location->hasReturn()) {
+        int returnCode = location->getReturnCode();
+        std::string returnUrl = location->getReturnUrl();
+        
+        std::cout << "[DEBUG] Location has return directive: " << returnCode << " " << returnUrl << std::endl;
+        
+        Response* response = new Response();
+        response->setStatus(returnCode);
+        response->setVersion("HTTP/1.0");
+        
+        // Set appropriate reason phrase
+        if (returnCode == 301)
+            response->setReasonPhrase("Moved Permanently");
+        else if (returnCode == 302)
+            response->setReasonPhrase("Found");
+        else if (returnCode == 307)
+            response->setReasonPhrase("Temporary Redirect");
+        
+        response->setServer("WebServer/1.0");
+        response->setDate();
+        response->setConnection("close");
+        
+        std::map<std::string, std::string> headers;
+        headers["Location"] = returnUrl;
+        response->setHeaders(headers);
+        
+        std::ostringstream body;
+        body << "<html><body><h1>" << returnCode << " Redirect</h1>"
+             << "<p>Redirecting to <a href=\"" << returnUrl << "\">" << returnUrl << "</a></p>"
+             << "</body></html>";
+        response->setBody(body.str());
+        
+        return response;
+    }
+    
+    // ============================================
+    // STEP 2: Check if method is allowed for this location
+    // ============================================
+    if (!location->isMethodAllowed(method))
+    {
+        std::cout << "[DEBUG] Method " << method << " not allowed for " 
+                  << location->getPath() << std::endl;
+        
+        Response* response = Response::makeErrorResponse(405);
+        
+        // Build Allow header with allowed methods from config
+        std::vector<std::string> allowedMethods = location->getMethods();
+        std::string allowHeader = "";
+        for (size_t i = 0; i < allowedMethods.size(); ++i) {
+            if (i > 0) allowHeader += ", ";
+            allowHeader += allowedMethods[i];
+        }
+        
+        response->setVersion("HTTP/1.0");
+        std::map<std::string, std::string> headers = response->getHeaders();
+        headers["Allow"] = allowHeader;
+        response->setHeaders(headers);
+        
+        return response;
+    }
 
-	if (request.getMethod() == "GET") handler = new GEThandle();
-	else if (request.getMethod() == "POST") handler = new POSThandle();
-	else if (request.getMethod() == "DELETE") handler = new DELETEhandle();
-	else 
-		throw (Request::ForbiddenMethod());
-	Response *output = handler->handle(request);
-	delete handler;
-	return (output);
+    if (location->isCGIEnabled())
+    {
+        if (isCgiByExtension(uri))
+        {
+            std::cout << "[DEBUG] CGI detected by file extension" << std::endl;
+            HttpMethodHandler *handler = new CGIhandler();
+            Response *output = handler->handler(request, location, &serverConfig);
+            delete handler;
+            return output;
+        }
+    }
+    // exit(1);
+    // ============================================
+    // STEP 3: Resolve resource path and check existence
+    // ============================================
+    std::string filePath = resolveFilePath(uri, location, serverConfig);
+    bool resourceExists = fileExists(filePath) || isDirectory(filePath);
+    
+    std::cout << "[DEBUG] Resolved file path: " << filePath << std::endl;
+    std::cout << "[DEBUG] Resource exists: " << (resourceExists ? "yes" : "no") << std::endl;
+    std::cout << "[DEBUG] Is directory: " << (isDirectory(filePath) ? "yes" : "no") << std::endl;
+    
+    // ============================================
+    // STEP 4: Create appropriate handler based on method
+    // ============================================
+    HttpMethodHandler *handler = NULL;
+    
+    if (method == "GET") {
+        std::cout << "[DEBUG] AUTOINDEX: " << location->getAutoIndex() << std::endl;
+        // GET: Resource must exist
+        if (!resourceExists && !location->getAutoIndex()) {
+            std::cout << "[DEBUG] GET: File not found: " << filePath << std::endl;
+            return Response::makeErrorResponse(404);
+        }
+        handler = new GEThandler();
+    }
+    else if (method == "POST") {
+        // POST: Flexible handling for different scenarios
+        // - Upload endpoints (/upload, /upload-image, etc.) → Allow
+        // - API endpoints (matching location path) → Allow
+        // - Regular files with extensions → Must exist
+        
+        bool isEndpoint = isUploadEndpoint(uri, location);
+        bool hasExtension = hasFileExtension(uri);
+        
+        std::cout << "[DEBUG] POST analysis: endpoint=" << (isEndpoint ? "yes" : "no")
+                  << ", hasExtension=" << (hasExtension ? "yes" : "no")
+                  << ", resourceExists=" << (resourceExists ? "yes" : "no") << std::endl;
+        
+        // Only require file existence if it's not an endpoint and has an extension
+        if (!isEndpoint && hasExtension && !resourceExists) {
+            std::cout << "[DEBUG] POST: Target file not found: " << filePath << std::endl;
+            return Response::makeErrorResponse(404);
+        }
+        
+        // All other cases: let POST handler deal with it
+        handler = new POSThandler();
+    }
+    else if (method == "DELETE") {
+        // DELETE: Resource must exist (can't delete non-existent file)
+        if (!resourceExists) {
+            std::cout << "[DEBUG] DELETE: File not found: " << filePath << std::endl;
+            return Response::makeErrorResponse(404);
+        }
+        handler = new DELETEhandler();
+    }
+    else {
+        // Method recognized but not implemented
+        std::cout << "[DEBUG] Method not implemented: " << method << std::endl;
+        
+        Response* response = Response::makeErrorResponse(501);
+        
+        // Build Allow header from location config
+        std::vector<std::string> allowedMethods = location->getMethods();
+        std::string allowHeader = "";
+        for (size_t i = 0; i < allowedMethods.size(); ++i) {
+            if (i > 0) allowHeader += ", ";
+            allowHeader += allowedMethods[i];
+        }
+        
+        std::map<std::string, std::string> headers = response->getHeaders();
+        headers["Allow"] = allowHeader;
+        response->setHeaders(headers);
+        
+        return response;
+    }
+    
+    // ============================================
+    // STEP 4: Execute handler with location context
+    // ============================================
+    Response *output = NULL;
+    try {
+        // Pass both request and location config to handler
+        output = handler->handler(request, location, &serverConfig);
+        
+    } catch (const Request::ForbiddenMethod& e) {
+        std::cout << "[DEBUG] Method forbidden for this resource" << std::endl;
+        delete handler;
+        
+        Response* response = Response::makeErrorResponse(405);
+        
+        // Build Allow header from location
+        std::vector<std::string> allowedMethods = location->getMethods();
+        std::string allowHeader = "";
+        for (size_t i = 0; i < allowedMethods.size(); ++i) {
+            if (i > 0) allowHeader += ", ";
+            allowHeader += allowedMethods[i];
+        }
+        
+        std::map<std::string, std::string> headers = response->getHeaders();
+        headers["Allow"] = allowHeader;
+        response->setHeaders(headers);
+        
+        return response;
+        
+    } catch (const Request::InvalidRequest& e) {
+        std::cout << "[DEBUG] Invalid request caught in dispatcher" << std::endl;
+        delete handler;
+        return Response::makeErrorResponse(400);
+        
+    } catch (const std::exception& e) {
+        std::cout << "[ERROR] Exception in handler: " << e.what() << std::endl;
+        delete handler;
+        return Response::makeErrorResponse(500);
+    }
+    
+    delete handler;
+    return output;
 }
 
+// Virtual destructor implementation
 HttpMethodHandler::~HttpMethodHandler() {
-
 }
