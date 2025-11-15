@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const method = process.ev.REQUEST_METHOD || 'GET';
+const method = process.env.REQUEST_METHOD || 'GET';
 const query = process.env.QUERY_STRING || '';
 
 //console.log('Status: 200 OK');
@@ -25,40 +25,3 @@ console.log('<button type="submit">Submit POST</button>');
 console.log('</form>');
 console.log('</body>');
 console.log('</html>');
-
-
-// const method = process.env.REQUEST_METHOD;
-// const queryString = process.env.QUERY_STRING || '';
-// const contentType = process.env.CONTENT_TYPE || '';
-// const contentLength = parseInt(process.env.CONTENT_LENGTH) || 0;
-
-// let body = '';
-
-// const { spawn } = require('child_process');
-
-// const ls = spawn('/bin/node', ['/home/bzinedda/Desktop/ahmed/www/cgi-bin/echo.js']);
-// ls.stdout.on('data', (data) => {
-//   console.log(`stdout: ${data}`);
-// });
-
-// // Read stdin
-// process.stdin.setEncoding('utf8');
-// process.stdin.on('data', chunk => {
-//     body += chunk;
-// });
-
-// process.stdin.on('end', () => {
-//     // Output CGI response (Status header is required)
-//     console.log('Status: 200 OK');
-//     console.log('Content-Type: application/json');
-//     console.log('');
-    
-//     console.log(JSON.stringify({
-//         method: method,
-//         query: queryString,
-//         contentType: contentType,
-//         contentLength: contentLength,
-//         body: body.substring(0, 200),
-//         timestamp: new Date().toISOString()
-//     }, null, 2));
-// });

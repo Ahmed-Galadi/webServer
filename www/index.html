@@ -65,77 +65,25 @@
             font-size: 0.9em;
             opacity: 0.9;
         }
-        .info-box {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 30px;
-            text-align: left;
-        }
-        .info-box h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-        .info-box ul {
-            margin-left: 20px;
-            color: #555;
-        }
-        .info-box li {
-            margin: 8px 0;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🚀 Webserv</h1>
-        <p class="subtitle">HTTP/1.0 Web Server - Testing Dashboard</p>
+        <p class="subtitle">HTTP/1.0 Web Server</p>
 
         <div class="nav-grid">
-            <a href="/test_upload.html" class="nav-card">
-                <div class="icon">📤</div>
-                <h3>POST Testing</h3>
-                <p>Test all POST request types</p>
+            <a href="/cgi-bin/email-validator.js" class="nav-card">
+                <div class="icon">✉️</div>
+                <h3>Email Validator</h3>
+                <p>Validate email format</p>
             </a>
 
-            <a href="/cgi-bin/echo.js" class="nav-card">
-                <div class="icon">⚙️</div>
-                <h3>CGI Test</h3>
-                <p>Test CGI functionality</p>
+            <a href="/drive.html" class="nav-card">
+                <div class="icon">💾</div>
+                <h3>Drive</h3>
+                <p>Upload & manage files</p>
             </a>
-
-            <a href="/upload/" class="nav-card">
-                <div class="icon">📁</div>
-                <h3>View Uploads</h3>
-                <p>Browse uploaded files</p>
-            </a>
-
-            <a href="/test/" class="nav-card">
-                <div class="icon">🧪</div>
-                <h3>Test Pages</h3>
-                <p>Various test scenarios</p>
-            </a>
-        </div>
-
-        <div class="info-box">
-            <h3>📋 Quick Reference</h3>
-            <ul>
-                <li><strong>Main Server:</strong> http://localhost:8080</li>
-                <li><strong>CGI Only:</strong> http://localhost:4040</li>
-                <li><strong>C++ Only:</strong> http://localhost:3000</li>
-                <li><strong>Max Upload:</strong> 10MB</li>
-                <li><strong>Protocol:</strong> HTTP/1.0</li>
-            </ul>
-        </div>
-
-        <div class="info-box">
-            <h3>🧪 Quick Tests</h3>
-            <ul>
-                <li><strong>GET:</strong> <code>curl http://localhost:8080/</code></li>
-                <li><strong>POST Form:</strong> <code>curl -d "name=test" http://localhost:8080/form-submit</code></li>
-                <li><strong>POST File:</strong> <code>curl -F "file=@test.txt" http://localhost:8080/upload</code></li>
-                <li><strong>POST JSON:</strong> <code>curl -H "Content-Type: application/json" -d '{"test":"data"}' http://localhost:8080/api/data</code></li>
-                <li><strong>CGI:</strong> <code>curl http://localhost:8080/cgi-bin/echo.js?name=test</code></li>
-            </ul>
         </div>
 
         <div style="margin-top: 30px; color: #999; font-size: 0.9em;">

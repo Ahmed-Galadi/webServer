@@ -1,0 +1,15 @@
+obj/http/httpMethods/get/GEThandler.o: \
+ src/http/httpMethods/get/GEThandler.cpp \
+ src/http/httpMethods/get/./GEThandler.hpp \
+ src/http/httpMethods/get/./../../response/HttpMethodHandler.hpp \
+ src/http/httpMethods/get/./../../response/../requestParse/Request.hpp \
+ src/http/httpMethods/get/./../../response/../requestParse/RequestBody.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/HttpMethodHandler.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../requestParse/Request.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../response/Response.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../response/../requestParse/Request.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../../config/LocationConfig.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../../config/ParseUtils.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../../config/ServerConfig.hpp \
+ src/http/httpMethods/get/./../utils/MimeType.hpp \
+ src/http/httpMethods/get/./../utils/FileHandler.hpp include/webserv.hpp

@@ -1,0 +1,26 @@
+obj/http/response/HttpMethodhandler.o: \
+ src/http/response/HttpMethodhandler.cpp \
+ src/http/response/HttpMethodHandler.hpp \
+ src/http/response/../requestParse/Request.hpp \
+ src/http/response/../requestParse/RequestBody.hpp \
+ src/http/response/../httpMethods/HttpMethodHandler.hpp \
+ src/http/response/../httpMethods/../requestParse/Request.hpp \
+ src/http/response/../httpMethods/../response/Response.hpp \
+ src/http/response/../httpMethods/../response/../requestParse/Request.hpp \
+ src/http/response/../httpMethods/../../config/LocationConfig.hpp \
+ src/http/response/../httpMethods/../../config/ParseUtils.hpp \
+ src/http/response/../httpMethods/../../config/ServerConfig.hpp \
+ src/http/response/../httpMethods/post/POSThandler.hpp \
+ src/http/response/../httpMethods/post/../../requestParse/Request.hpp \
+ src/http/response/../httpMethods/post/../utils/FileHandler.hpp \
+ src/http/response/../httpMethods/get/GEThandler.hpp \
+ src/http/response/../httpMethods/get/../utils/MimeType.hpp \
+ src/http/response/../httpMethods/get/../utils/FileHandler.hpp \
+ include/webserv.hpp \
+ src/http/response/../httpMethods/delete/DELETEhandler.hpp \
+ src/http/response/../httpMethods/delete/../utils/FileHandler.hpp \
+ src/http/response/../httpMethods/cgi/CGIhandler.hpp \
+ src/http/response/../httpMethods/cgi/../../../server/Server.hpp \
+ src/http/response/../httpMethods/cgi/../../../server/../../include/webserv.hpp \
+ src/http/response/../httpMethods/cgi/../../../server/../config/ConfigParser.hpp \
+ src/http/response/../httpMethods/cgi/../../../server/../config/ParsingBlock.hpp
