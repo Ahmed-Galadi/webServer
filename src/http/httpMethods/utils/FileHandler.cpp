@@ -5,8 +5,28 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <iomanip>
 
 std::string FileHandler::uploadDirectory = "./www/upload";
+
+// URL decode function to handle filenames with spaces and special characters
+static std::string urlDecode(const std::string &str) {
+    std::ostringstream decoded;
+    for (size_t i = 0; i < str.length(); ++i) {
+        if (str[i] == '%' && i + 2 < str.length()) {
+            std::string hex = str.substr(i + 1, 2);
+            int value;
+            std::istringstream(hex) >> std::hex >> value;
+            decoded << static_cast<char>(value);
+            i += 2;
+        } else if (str[i] == '+') {
+            decoded << ' ';
+        } else {
+            decoded << str[i];
+        }
+    }
+    return decoded.str();
+}
 
 bool FileHandler::createDirectoryIfNotExists(const std::string& path) {
     struct stat st;
@@ -37,7 +57,9 @@ std::string FileHandler::getUploadDirectory() {
 }
 
 std::string FileHandler::sanitizeFilename(const std::string& filename) {
-    std::string sanitized = filename;
+    // First, decode URL-encoded characters (e.g., %20 -> space)
+    std::string decoded = urlDecode(filename);
+    std::string sanitized = decoded;
     
     // Remove or replace dangerous characters
     for (size_t i = 0; i < sanitized.length(); ++i) {

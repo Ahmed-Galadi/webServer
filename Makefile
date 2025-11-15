@@ -53,12 +53,6 @@ fclean: clean
 
 re: fclean all
 
-# Development targets
-test: $(NAME)
-	./$(NAME) config/default.conf
-
-debug: CXXFLAGS += -DDEBUG
-debug: re
 
 # Include dependency files if they exist
 -include $(DEPFILES)

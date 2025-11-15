@@ -18,7 +18,7 @@ public:
     std::string getRawBody() const; 
     std::map<std::string, std::string> getHeaders() const;
     std::map<std::string, std::string> getQuery() const;
-    std::vector<struct RequestBody> getBody();
+    std::vector<RequestBody> getBody();
     // BINARY-SAFE: New methods
     const std::vector<char>& getRawBinaryBody() const;
     const std::vector<char>& getBinaryBody() const { return binaryBody; };

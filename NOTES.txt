@@ -23,8 +23,3 @@
 
 
 - limit body size(get from main branch) -------IMPORTANT-------
-
-
-return directive becomme first so index is ignored
-
-error_page directive become first so the default error is ignored when found matched error number in error directive

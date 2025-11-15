@@ -87,13 +87,37 @@ Response* POSThandler::handler(const Request& req, const LocationConfig* locatio
 std::string POSThandler::getUploadDirectory(const LocationConfig* location) const {
     if (location) {
         std::string root = location->getRoot();
+        std::string locationPath = location->getPath();
+        
         if (!root.empty()) {
+            // Clean root: remove trailing slash if present
+            if (!root.empty() && root[root.size() - 1] == '/') {
+                root.erase(root.size() - 1);
+            }
+            
+            // For /upload location with root www, we want www/upload
+            // The location path is part of the URI, we need to append it to root
+            if (!locationPath.empty()) {
+                // Remove leading slash from location path
+                if (locationPath[0] == '/') {
+                    locationPath = locationPath.substr(1);
+                }
+                // Remove trailing slash from location path
+                if (!locationPath.empty() && locationPath[locationPath.size() - 1] == '/') {
+                    locationPath.erase(locationPath.size() - 1);
+                }
+                
+                if (!locationPath.empty()) {
+                    return root + "/" + locationPath;
+                }
+            }
+            
             return root;
         }
     }
     
     // Fallback to default
-    return "./www/upload";
+    return "www/upload";
 }
 
 

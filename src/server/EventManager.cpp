@@ -8,7 +8,7 @@
 
 EventManager::EventManager(int max_events) : epoll_fd(-1), events(NULL), max_events(max_events)
 {
-    epoll_fd = epoll_create1(0);
+    epoll_fd = epoll_create(1);
     if (epoll_fd == -1) {
         throw std::runtime_error("Failed to create epoll file descriptor");
     }
