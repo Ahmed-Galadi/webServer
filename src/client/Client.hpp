@@ -6,13 +6,7 @@
 #include "../config/LocationConfig.hpp"
 #include "../http/requestParse/Request.hpp"
 #include "../http/response/Response.hpp"
-#include "../server/EventManager.hpp"
 #include "../http/httpMethods/cgi/CGIhandler.hpp" 
-#include <algorithm>  // for std::transform
-#include <cctype>     // for ::tolower
-#include <cstdlib>    // for atol
-#include <string>     // for std::string
-
 
 class EventManager;
 
@@ -27,7 +21,6 @@ private:
     size_t bytes_read;
     size_t bytes_written;
     time_t last_activity;
-    bool keep_alive;
     ServerConfig* serverConfig;
         // NEW: Store EventManager reference for CGI
     EventManager* eventManager;

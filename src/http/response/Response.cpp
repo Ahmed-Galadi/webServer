@@ -230,11 +230,6 @@ void	Response::setServer(const std::string &srv) {
 	this->server = srv;
 }
 
-void Response::setReasonPhrase(const std::string &phrase)
-{
-    reasonPhrase = phrase;
-}
-
 void Response::addHeader(const std::string &key, const std::string &value)
 {
 	headers[key] = value;
@@ -244,11 +239,6 @@ void Response::addHeader(const std::string &key, const std::string &value)
 // getters
 int	Response::getStatus() const {
 	return (status);
-}
-
-std::string Response::getReasonPhrase() const
-{
-     return reasonPhrase;
 }
 
 std::string	Response::getConnection() const {

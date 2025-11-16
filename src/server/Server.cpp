@@ -12,6 +12,7 @@
 #include <cstring>
 #include <errno.h>
 #include <algorithm>
+#include "../../include/GlobalUtils.hpp"
 
 Server::Server(const std::vector<ServerConfig>& configs,
        const std::map<std::string, std::string>& env) : configs(configs), running(false) {
@@ -39,8 +40,7 @@ void Server::initialize(EventManager& event_manager) {
 		}
 
 		// Set socket to non-blocking
-		int flags = fcntl(server_fd, F_GETFL, 0);
-		if (flags == -1 || fcntl(server_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		if (!setToNonBlocking(server_fd)) {
 			std::cerr << "[ERROR] Failed to set socket to non-blocking: " << strerror(errno) << std::endl;
 			close(server_fd);
 			throw std::runtime_error("Failed to set socket to non-blocking");
@@ -84,7 +84,15 @@ void Server::initialize(EventManager& event_manager) {
 		}
 
 		server_fds.push_back(server_fd);
-		event_manager.addSocket(server_fd, this, EPOLLIN);
+		try {
+			event_manager.addSocket(server_fd, this, EPOLLIN);
+		} catch (const std::exception& e) {
+			// Ensure we don't leak the server socket if epoll registration fails
+			std::cerr << "[ERROR] Failed to register server socket in epoll: " << e.what() << std::endl;
+			close(server_fd);
+			server_fds.pop_back();
+			throw;
+		}
 		
 		std::cout << "[INFO] Server listening on " << configs[i].getHost() 
 				  << ":" << configs[i].getPort() << " with fd=" << server_fd << std::endl;
@@ -230,8 +238,7 @@ void Server::acceptConnection(int server_fd, EventManager& event_manager)
 	}
 	
 	// Set client socket to non-blocking
-	int flags = fcntl(client_fd, F_GETFL, 0);
-	if (flags == -1 || fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+	if (!setToNonBlocking(client_fd)) {
 		std::cerr << "[ERROR] Failed to set client socket to non-blocking: " << strerror(errno) << std::endl;
 		close(client_fd);
 		return;
@@ -252,16 +259,25 @@ void Server::acceptConnection(int server_fd, EventManager& event_manager)
 		return;
 	}
 	
-    // Create new client
-    Client* client = new Client(client_fd, config);
-    client->setEventManager(&event_manager);  // ADD THIS LINE
-    clients.push_back(client);
-	
+	// Create new client
+	Client* client = new Client(client_fd, config);
+	client->setEventManager(&event_manager);
+	clients.push_back(client);
+
 	// Add client to epoll in Level-Triggered mode (not Edge-Triggered)
 	// LT mode: epoll continues to notify while data is available
 	// ET mode: epoll only notifies once when new data arrives (would require reading all data at once)
 	// Since we read once per epoll event (per subject requirements), we need LT mode
-	event_manager.addSocket(client_fd, client, EPOLLIN | EPOLLERR | EPOLLHUP);
+	try {
+		event_manager.addSocket(client_fd, client, EPOLLIN | EPOLLERR | EPOLLHUP);
+	} catch (const std::exception& e) {
+		std::cerr << "[ERROR] Failed to register client socket in epoll: " << e.what() << std::endl;
+		// Cleanup to avoid FD and memory leaks
+		clients.erase(std::remove(clients.begin(), clients.end(), client), clients.end());
+		delete client;
+		close(client_fd);
+		return;
+	}
 
 	
 	char client_ip[INET_ADDRSTRLEN];
@@ -272,16 +288,4 @@ void Server::acceptConnection(int server_fd, EventManager& event_manager)
 // Getters
 const std::vector<int>& Server::getServerFds() const {
 	return server_fds;
-}
-
-const std::vector<ServerConfig>& Server::getConfigs() const {
-	return configs;
-}
-
-const std::vector<Client*>& Server::getClients() const {
-	return clients;
-}
-
-bool Server::isRunning() const {
-	return running;
 }

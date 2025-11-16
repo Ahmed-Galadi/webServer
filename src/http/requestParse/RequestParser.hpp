@@ -1,9 +1,8 @@
 #pragma once
 
-#include <string>
+#include "../../../include/webserv.hpp"
 #include "RequestBody.hpp"
 #include "Request.hpp"
-#include <vector>
 
 class RequestParser {
 public:

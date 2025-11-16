@@ -1,10 +1,9 @@
 #ifndef DELETEHANDLER_HPP
 # define DELETEHANDLER_HPP
 
+#include "../../../../include/webserv.hpp"
 #include "../../response/HttpMethodHandler.hpp"
 #include "../utils/FileHandler.hpp"
-#include "webserv.hpp"
-#include <map>
 
 class DELETEhandler : public HttpMethodHandler {
 	public:

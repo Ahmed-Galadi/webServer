@@ -156,14 +156,6 @@ Response* HttpMethodDispatcher::executeHttpMethod(const Request &request,
         response->setStatus(returnCode);
         response->setVersion("HTTP/1.0");
         
-        // Set appropriate reason phrase
-        if (returnCode == 301)
-            response->setReasonPhrase("Moved Permanently");
-        else if (returnCode == 302)
-            response->setReasonPhrase("Found");
-        else if (returnCode == 307)
-            response->setReasonPhrase("Temporary Redirect");
-        
         response->setServer("WebServer/1.0");
         response->setDate();
         response->setConnection("close");

@@ -1,4 +1,6 @@
 #pragma once
+
+#include "../../../include/webserv.hpp"
 #include "../requestParse/Request.hpp"
 #include "../response/Response.hpp"
 #include "../../config/LocationConfig.hpp"

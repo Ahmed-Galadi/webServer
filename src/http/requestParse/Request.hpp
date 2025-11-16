@@ -1,11 +1,8 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
-#include <iostream>
-#include <map>
+#include "../../../include/webserv.hpp"
 #include "RequestBody.hpp"
-#include <exception>
-#include <algorithm> 
 
 class Request {
 public:

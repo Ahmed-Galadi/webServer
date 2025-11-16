@@ -1,16 +1,12 @@
 #pragma once
 
+#include "../../../../include/webserv.hpp"
 #include "../../response/HttpMethodHandler.hpp"
 #include "../../requestParse/Request.hpp"
 #include "../../requestParse/RequestBody.hpp"
 #include "../../response/Response.hpp"
 #include "../../../config/LocationConfig.hpp"
 #include "../utils/FileHandler.hpp"
-#include <vector>
-#include <string>
-#include <map>
-#include <sstream>
-#include <iostream>
 
 class POSThandler : public HttpMethodHandler {
 private:
@@ -36,8 +32,7 @@ private:
     
     // Utility methods
     std::string getContentType(const std::map<std::string, std::string>& headers);
-    std::string toLowerCase(const std::string& str);
-    static std::string numberToString(size_t number);
+    
     Response* createErrorResponse(int statusCode, const std::string& message);
         // ← NEW: Get upload directory from location 
         // this may no be necessarry - use the FileHandler class in utils dir

@@ -86,6 +86,12 @@ LocationConfig		ConfigParser::makeLocationConfig(std::vector<std::string>::itera
                 }
             }
         }
+        else if (*tokens == "upload_store") {
+            tokens++;
+            if (*tokens != "}" && *tokens != ";") {
+                outputLocation.setUploadStore(*tokens);
+            }
+        }
 	}
 	return (outputLocation);
 }

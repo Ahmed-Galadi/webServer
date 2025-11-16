@@ -2,14 +2,11 @@
 #include "../src/config/ConfigParser.hpp"
 #include "../src/server/Server.hpp"
 #include "../src/server/EventManager.hpp"
-#include <map>
-#include <string>
-#include <iostream>
 
 int main(int argc, char* argv[], char* envp[]) {
     try {
         // Default config file path
-        std::string config_file = "config/default.conf";
+        std::string config_file = "config/default2.conf";
         
         if (argc > 1) {
             config_file = argv[1];

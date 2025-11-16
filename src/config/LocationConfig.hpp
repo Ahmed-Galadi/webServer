@@ -1,7 +1,6 @@
 #pragma once
 
-#include <string>
-#include <vector>
+#include "../../include/webserv.hpp"
 #include "ParseUtils.hpp"
 
 class LocationConfig {
@@ -17,6 +16,8 @@ class LocationConfig {
 		bool						has_return;
 		int							return_code;
 		std::string					return_url;
+		// Upload store: directory where uploaded files should be saved
+		std::string					upload_store;
 
 	public:
 		LocationConfig(); 
@@ -28,6 +29,7 @@ class LocationConfig {
 		void 		setClientMaxBodySize(size_t size);
 		void		setAutoIndex(bool autoindex);
 		void		setReturn(int code, const std::string& url);
+		void		setUploadStore(const std::string& path);
 
 		std::string					getPath() const;
 		std::string					getRoot() const;
@@ -40,4 +42,5 @@ class LocationConfig {
 		bool						hasReturn() const;
 		int							getReturnCode() const;
 		std::string					getReturnUrl() const;
+		std::string					getUploadStore() const;
 };

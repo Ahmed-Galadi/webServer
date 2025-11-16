@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include "../../../../include/GlobalUtils.hpp"
 
 
 std::string urlDecode(const std::string &str) {
@@ -241,10 +242,10 @@ Response* GEThandler::handler(const Request& req, const LocationConfig* location
 
         std::string mimeType = MimeType::getMimeType(path);
 
+
         std::map<std::string, std::string> headers;
         headers["Content-Length"] = numberToString(responseBody.size());
         headers["Content-Type"] = mimeType;
-        headers["Cache-Control"] = "public, max-age=3600";
         
         // If MIME type is unknown (application/octet-stream), add Content-Disposition
         // to trigger download behavior like NGINX
@@ -463,46 +464,6 @@ bool GEThandler::compareEntries(const DirectoryEntry& a, const DirectoryEntry& b
     return a.name < b.name;
 }
 
-Response* GEThandler::serveTextFile(Response* response, const std::string& filepath, const std::string& mimeType) {
-    std::string content;
-    if (!FileHandler::readFile(filepath, content)) {
-        delete response;
-        return createErrorResponse(500, "Cannot read file");
-    }
-    
-    response->setStatus(200);
-    response->setBody(content);
-    
-    std::map<std::string, std::string> headers;
-    headers["Content-Type"] = mimeType;
-    headers["Content-Length"] = numberToString(content.length());
-    response->setHeaders(headers);
-    
-    return response;
-}
-
-Response* GEThandler::serveBinaryFile(Response* response, const std::string& filepath, const std::string& mimeType) {
-    std::vector<char> content;
-    if (!FileHandler::readBinaryFile(filepath, content)) {
-        delete response;
-        return createErrorResponse(500, "Cannot read file");
-    }
-    
-    std::string binaryData(content.begin(), content.end());
-    
-    response->setStatus(200);
-    response->setBody(binaryData);
-    
-    std::map<std::string, std::string> headers;
-    headers["Content-Type"] = mimeType;
-    headers["Content-Length"] = numberToString(content.size());
-    headers["Cache-Control"] = "public, max-age=3600";
-    
-    response->setHeaders(headers);
-    
-    return response;
-}
-
 Response* GEThandler::createErrorResponse(int statusCode, const std::string& message) {
     Response* response = new Response();
     response->setStatus(statusCode);
@@ -522,8 +483,3 @@ Response* GEThandler::createErrorResponse(int statusCode, const std::string& mes
     return response;
 }
 
-std::string GEThandler::numberToString(size_t number) {
-    std::ostringstream oss;
-    oss << number;
-    return oss.str();
-}

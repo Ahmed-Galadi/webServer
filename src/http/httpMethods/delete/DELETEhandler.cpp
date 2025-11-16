@@ -63,7 +63,6 @@ Response* DELETEhandler::handler(const Request &req, const LocationConfig* locat
     
     Response* response = new Response();
     response->setStatus(204);
-    response->setReasonPhrase("No Content");
     response->setVersion("HTTP/1.0");
     response->setServer("WebServer/1.0");
     response->setDate();

@@ -1,4 +1,5 @@
 #include "./POSThandler.hpp"
+#include "../../../../include/GlobalUtils.hpp"
 
 Response* POSThandler::handleFormUrlEncoded(const Request& req, Response* response,
                                          const std::vector<RequestBody>& bodyParts,

@@ -3,12 +3,9 @@
 #define CONNECTIONMANAGER_HPP
 
 #include "../../include/webserv.hpp"
-#include "../client/Client.hpp"
 
 #ifndef EVENT_MANAGER_HPP
 #define EVENT_MANAGER_HPP
-
-#include <sys/epoll.h>
 
 class Server;
 class Client;
@@ -25,7 +22,6 @@ public:
     void removeSocket(int fd);
     void modifySocket(int fd, void* data, uint32_t events);
     int waitForEvents(epoll_event* event_buffer, int timeout);
-    int getEpollFd() const;
 };
 
 #endif

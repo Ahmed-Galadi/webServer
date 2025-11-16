@@ -1,12 +1,8 @@
 
 // ============ Enhanced Debug Version of Client.cpp ============
 #include "Client.hpp"
+#include "../server/EventManager.hpp"
 #include "../http/httpMethods/cgi/CGIhandler.hpp"
-#include <unistd.h>
-#include <sys/socket.h>
-#include <iostream>
-#include <cstring>
-#include <errno.h>
 #include "../http/requestParse/Request.hpp"
 #include "../http/response/HttpMethodHandler.hpp"
 #include "../http/response/Response.hpp"
@@ -36,7 +32,7 @@ static bool isCgiByExtension(const std::string& uri) {
 Client::Client(int fd, ServerConfig* serverConfig) 
     : fd(fd), state(READING_REQUEST), request(NULL), response(NULL),
       bytes_read(0), bytes_written(0), last_activity(time(NULL)), 
-      keep_alive(false), serverConfig(serverConfig), eventManager(NULL), waitingForCgi(false) {
+      serverConfig(serverConfig), eventManager(NULL), waitingForCgi(false) {
     if (fd <= 0) throw std::invalid_argument("Invalid file descriptor");
 }
 
@@ -197,30 +193,8 @@ void Client::handleWrite(EventManager& event_mgr)
     // Check if we've sent the complete response
     if (bytes_written >= write_buffer.length())
     {
-        if (keep_alive) {
-            // Reset for next request
-            state = READING_REQUEST;
-            read_buffer.clear();
-            write_buffer.clear();
-            bytes_read = 0;
-            bytes_written = 0;
-            if (request)
-            {
-                delete request;
-                request = NULL;
-            }
-            if (response)
-            {
-                delete response;
-                response = NULL;
-            }
-            // Switch back to reading mode
-            modifySocketForRead(event_mgr);
-        }
-        else
-        {
-            closeConnection(event_mgr);
-        }
+        // Always close connection after sending response
+        closeConnection(event_mgr);
     }
 }
 
@@ -254,7 +228,6 @@ void Client::parseRequest() {
             if (!response) {
                 response = new Response();
                 response->setStatus(413);
-                response->setReasonPhrase("Request Entity Too Large");
                 response->setBody("<html><body><h1>413 Request Entity Too Large</h1></body></html>");
                 response->addHeader("Content-Type", "text/html");
                 response->addHeader("Content-Length", "70");  // Length of the body above
@@ -266,19 +239,7 @@ void Client::parseRequest() {
             return;
         }
         
-        // Check for Connection header (HTTP/1.0 compatibility)
-        std::map<std::string, std::string> headers = request->getHeaders();
-        std::map<std::string, std::string>::iterator it = headers.find("Connection");
-        
-        if (it != headers.end()) {
-            std::string connection = it->second;
-            std::transform(connection.begin(), connection.end(), connection.begin(), ::tolower);
-            if (connection == "keep-alive") {
-                keep_alive = true;
-            }
-        } else {
-            // HTTP/1.0 default: close connection after response
-        }
+        // Always use close connection (no keep-alive support)
         
         state = REQUEST_COMPLETE;
     }
@@ -303,7 +264,6 @@ void Client::parseRequest() {
                     if (!response) {
                         response = new Response();
                         response->setStatus(413);
-                        response->setReasonPhrase("Request Entity Too Large");
                         response->setBody("<html><body><h1>413 Request Entity Too Large</h1></body></html>");
                         response->addHeader("Content-Type", "text/html");
                         std::ostringstream oss;

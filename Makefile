@@ -28,6 +28,7 @@ SOURCES = $(SRCDIR)/main.cpp \
 		  $(SRCDIR)/http/httpMethods/post/POSThandler.cpp \
 		  $(SRCDIR)/http/httpMethods/utils/MimeType.cpp \
 		  $(SRCDIR)/http/httpMethods/utils/FileHandler.cpp \
+		  $(SRCDIR)/utils/GlobalUtils.cpp \
 		  $(SRCDIR)/http/httpMethods/get/GEThandler.cpp \
 		  $(SRCDIR)/http/httpMethods/delete/DELETEhandler.cpp \
 		  $(SRCDIR)/http/httpMethods/cgi/CGIhandler.cpp \
@@ -53,6 +54,12 @@ fclean: clean
 
 re: fclean all
 
+# Development targets
+test: $(NAME)
+	./$(NAME) config/default.conf
+
+debug: CXXFLAGS += -DDEBUG
+debug: re
 
 # Include dependency files if they exist
 -include $(DEPFILES)

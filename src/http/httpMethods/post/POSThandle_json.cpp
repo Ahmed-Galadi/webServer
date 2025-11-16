@@ -1,4 +1,5 @@
 #include "./POSThandler.hpp"
+#include "../../../../include/GlobalUtils.hpp"
 
 Response* POSThandler::handleJsonData(const Request& req, Response* response, const std::string& uri) {
     std::string jsonData = req.getRawBody();

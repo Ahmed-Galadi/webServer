@@ -1,0 +1,6 @@
+EPPHUB/EPP/ERR
+MIME type understanding
+must add error pages
+sys calls
+install siege in mac
+understand struct in GET http method - DirectoryEntry

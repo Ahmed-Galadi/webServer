@@ -11,6 +11,7 @@
 #include <cstring>
 #include <cerrno>
 #include <sys/stat.h>
+#include "../../../../include/GlobalUtils.hpp"
 
 // Initialize static members
 std::map<int, CgiExecution*> CGIhandler::s_cgiExecutions;
@@ -51,7 +52,6 @@ Response* CGIhandler::handler(const Request &req, const LocationConfig* location
 
     Response* res = new Response();
     res->setStatus(500);
-    res->setReasonPhrase("Internal Server Error");
     res->setBody("<html><body><h1>500 Internal Server Error</h1></body></html>");
     res->addHeader("Content-Type", "text/html");
     std::ostringstream oss;
@@ -95,7 +95,6 @@ bool CGIhandler::startCgiExecution(const Request &req,
         std::string body = "404 Not Found: CGI script not found or not executable.";
         res->setStatus(404);
         res->setVersion("HTTP/1.0");
-        res->setReasonPhrase("Not Found");
         res->setBody(body);
         res->addHeader("Content-Type", "text/plain");
         std::ostringstream oss;
@@ -113,7 +112,6 @@ bool CGIhandler::startCgiExecution(const Request &req,
         std::string body = "404 Not Found: CGI script not found or not executable.";
         res->setStatus(404);
         res->setVersion("HTTP/1.0");
-        res->setReasonPhrase("Not Found");
         res->setBody(body);
         res->addHeader("Content-Type", "text/plain");
         std::ostringstream oss;
@@ -139,7 +137,6 @@ bool CGIhandler::startCgiExecution(const Request &req,
         
         Response *res = new Response();
         res->setStatus(500);
-        res->setReasonPhrase("Internal Server Error");
         res->setBody("<html><body><h1>500 Internal Server Error</h1></body></html>");
         res->addHeader("Content-Type", "text/html");
         std::ostringstream oss;
@@ -164,7 +161,6 @@ bool CGIhandler::startCgiExecution(const Request &req,
         
         Response *res = new Response();
         res->setStatus(500);
-        res->setReasonPhrase("Internal Server Error");
         res->setBody("<html><body><h1>500 Internal Server Error</h1></body></html>");
         res->addHeader("Content-Type", "text/html");
         std::ostringstream oss;
@@ -184,10 +180,8 @@ bool CGIhandler::startCgiExecution(const Request &req,
     close(socketPair[1]);
     
     // Set parent's end to non-blocking
-    int flags = fcntl(socketPair[0], F_GETFL, 0);
-    if (flags != -1) {
-        fcntl(socketPair[0], F_SETFL, flags | O_NONBLOCK);
-    }
+    // Set parent's end to non-blocking
+    setToNonBlocking(socketPair[0]);
     
     // Create execution tracker
     CgiExecution* exec = new CgiExecution();
@@ -203,9 +197,18 @@ bool CGIhandler::startCgiExecution(const Request &req,
     
     // Add to tracking map
     s_cgiExecutions[socketPair[0]] = exec;
-    
+
     // Add socket to epoll for writing (to send request body)
-    eventMgr.addSocket(socketPair[0], exec, EPOLLOUT | EPOLLERR | EPOLLHUP);
+    try {
+        eventMgr.addSocket(socketPair[0], exec, EPOLLOUT | EPOLLERR | EPOLLHUP);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Failed to register CGI socket in epoll: " << e.what() << std::endl;
+        // Cleanup to avoid FD and memory leaks
+        s_cgiExecutions.erase(socketPair[0]);
+        if (exec->socketFd > 0) close(exec->socketFd);
+        delete exec;
+        return false;
+    }
     
     // Mark client as waiting for CGI
     client->setWaitingForCgi(true);
@@ -624,14 +627,12 @@ Response* CGIhandler::parseCgiOutput(const std::string &output, int /*exitCode*/
     } else {
         // No headers, treat as all body
         res->setStatus(200);
-        res->setReasonPhrase("OK");
         res->setBody(output);
         res->addHeader("Content-Type", "text/html");
     }
     
     if (res->getStatus() == 0) {
         res->setStatus(200);
-        res->setReasonPhrase("OK");
     }
     
     return res;
@@ -671,7 +672,6 @@ void CGIhandler::parseCgiHeaders(const std::string &headersStr, Response *res) {
                 }
                 res->setStatus(statusCode);
                 if (!reasonPhrase.empty()) {
-                    res->setReasonPhrase(reasonPhrase);
                 }
                 statusSet = true;
             }
@@ -682,6 +682,5 @@ void CGIhandler::parseCgiHeaders(const std::string &headersStr, Response *res) {
     
     if (!statusSet) {
         res->setStatus(200);
-        res->setReasonPhrase("OK");
     }
 }

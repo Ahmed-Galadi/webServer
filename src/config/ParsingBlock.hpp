@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <string>
+#include "../../include/webserv.hpp"
 
 class ParsingBlock {
 	private:

@@ -3,6 +3,7 @@
 #include <sstream>
 #include <cctype>
 #include <cstddef>
+#include "../../../../include/GlobalUtils.hpp"
 
 Response* POSThandler::handler(const Request& req, const LocationConfig* location, const ServerConfig* /* serverConfig */) {
     Response* response = new Response();
@@ -86,38 +87,21 @@ Response* POSThandler::handler(const Request& req, const LocationConfig* locatio
 // ← NEW: Get upload directory from location config
 std::string POSThandler::getUploadDirectory(const LocationConfig* location) const {
     if (location) {
-        std::string root = location->getRoot();
-        std::string locationPath = location->getPath();
+        // Priority 1: Check if upload_store directive is set
+        std::string uploadStore = location->getUploadStore();
+        if (!uploadStore.empty()) {
+            return uploadStore;
+        }
         
+        // Priority 2: Fallback to root directive
+        std::string root = location->getRoot();
         if (!root.empty()) {
-            // Clean root: remove trailing slash if present
-            if (!root.empty() && root[root.size() - 1] == '/') {
-                root.erase(root.size() - 1);
-            }
-            
-            // For /upload location with root www, we want www/upload
-            // The location path is part of the URI, we need to append it to root
-            if (!locationPath.empty()) {
-                // Remove leading slash from location path
-                if (locationPath[0] == '/') {
-                    locationPath = locationPath.substr(1);
-                }
-                // Remove trailing slash from location path
-                if (!locationPath.empty() && locationPath[locationPath.size() - 1] == '/') {
-                    locationPath.erase(locationPath.size() - 1);
-                }
-                
-                if (!locationPath.empty()) {
-                    return root + "/" + locationPath;
-                }
-            }
-            
             return root;
         }
     }
     
-    // Fallback to default
-    return "www/upload";
+    // Priority 3: Default fallback
+    return "./www/upload";
 }
 
 
@@ -133,19 +117,6 @@ std::string POSThandler::getContentType(const std::map<std::string, std::string>
     return "";
 }
 
-std::string POSThandler::toLowerCase(const std::string& str) {
-    std::string result = str;
-    for (size_t i = 0; i < result.length(); ++i) {
-        result[i] = std::tolower(static_cast<unsigned char>(result[i]));
-    }
-    return result;
-}
-
-std::string POSThandler::numberToString(size_t number) {
-    std::ostringstream oss;
-    oss << number;
-    return oss.str();
-}
 
 Response* POSThandler::createErrorResponse(int statusCode, const std::string& message) {
     Response* response = new Response();

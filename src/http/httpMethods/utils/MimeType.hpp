@@ -1,8 +1,7 @@
 #ifndef MIMETYPE_HPP
 #define MIMETYPE_HPP
 
-#include <string>
-#include <map>
+#include "../../../../include/webserv.hpp"
 
 class MimeType {
 private:
@@ -19,9 +18,7 @@ public:
     static bool isVideoType(const std::string& mimeType);
     static bool isAudioType(const std::string& mimeType);
     static bool isTextType(const std::string& mimeType);
-    static bool isBinaryType(const std::string& mimeType);
     static bool isArchiveType(const std::string& mimeType);
-    static bool isDocumentType(const std::string& mimeType);
     
     // Utility functions
     static std::string getFileExtension(const std::string& filename);

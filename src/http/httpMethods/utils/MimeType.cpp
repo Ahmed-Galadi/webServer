@@ -133,16 +133,7 @@ bool MimeType::isTextType(const std::string& mimeType) {
            mimeType == "application/javascript";
 }
 
-bool MimeType::isBinaryType(const std::string& mimeType) {
-    // Consider binary types as those that are not text-based
-    return !isTextType(mimeType) || 
-           mimeType == "application/octet-stream" ||
-           isImageType(mimeType) ||
-           isVideoType(mimeType) ||
-           isAudioType(mimeType) ||
-           isArchiveType(mimeType) ||
-           mimeType.find("application/") == 0; // Most application types are binary
-}
+
 
 bool MimeType::isArchiveType(const std::string& mimeType) {
     return mimeType == "application/zip" ||
@@ -152,12 +143,3 @@ bool MimeType::isArchiveType(const std::string& mimeType) {
            mimeType == "application/x-7z-compressed";
 }
 
-bool MimeType::isDocumentType(const std::string& mimeType) {
-    return mimeType == "application/pdf" ||
-           mimeType == "application/msword" ||
-           mimeType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-           mimeType == "application/vnd.ms-excel" ||
-           mimeType == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-           mimeType == "application/vnd.ms-powerpoint" ||
-           mimeType == "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-}

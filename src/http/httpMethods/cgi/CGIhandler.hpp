@@ -1,13 +1,10 @@
 #pragma once
 
+#include "../../../../include/webserv.hpp"
 #include "../HttpMethodHandler.hpp"
 #include "../../../config/LocationConfig.hpp"
 #include "../../response/Response.hpp"
 #include "../../../server/Server.hpp"
-#include <map>
-#include <string>
-#include <vector>
-#include <sys/types.h>
 
 // Forward declaration
 class Client;

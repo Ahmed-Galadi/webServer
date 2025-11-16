@@ -1,6 +1,7 @@
 // Update your existing POSThandle_multipart.cpp with these changes:
 
 #include "./POSThandler.hpp"
+#include "../../../../include/GlobalUtils.hpp"
 #include "../utils/FileHandler.hpp"
 #include "../utils/MimeType.hpp"
 #include <sstream>

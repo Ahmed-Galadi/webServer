@@ -45,6 +45,10 @@ void	LocationConfig::setReturn(int code, const std::string& url) {
 	return_url = url;
 }
 
+void	LocationConfig::setUploadStore(const std::string& path) {
+	upload_store = path;
+}
+
 std::string		LocationConfig::getPath() const {
 	return (this->path);
 }
@@ -92,4 +96,8 @@ int		LocationConfig::getReturnCode() const {
 
 std::string	LocationConfig::getReturnUrl() const {
 	return return_url;
+}
+
+std::string	LocationConfig::getUploadStore() const {
+	return upload_store;
 }

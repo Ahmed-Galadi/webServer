@@ -30,10 +30,7 @@ public:
 
     // getters
     const std::vector<int>& getServerFds() const;
-    const std::vector<ServerConfig>& getConfigs() const;
-    const std::vector<Client*>& getClients() const;
     static const std::map<std::string, std::string>& getEnv();
-    bool isRunning() const;
 };
 
 #endif

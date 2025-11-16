@@ -5,42 +5,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
-#include <iomanip>
 
 std::string FileHandler::uploadDirectory = "./www/upload";
 
-// URL decode function to handle filenames with spaces and special characters
-static std::string urlDecode(const std::string &str) {
-    std::ostringstream decoded;
-    for (size_t i = 0; i < str.length(); ++i) {
-        if (str[i] == '%' && i + 2 < str.length()) {
-            std::string hex = str.substr(i + 1, 2);
-            int value;
-            std::istringstream(hex) >> std::hex >> value;
-            decoded << static_cast<char>(value);
-            i += 2;
-        } else if (str[i] == '+') {
-            decoded << ' ';
-        } else {
-            decoded << str[i];
-        }
-    }
-    return decoded.str();
-}
 
-bool FileHandler::createDirectoryIfNotExists(const std::string& path) {
-    struct stat st;
-    if (stat(path.c_str(), &st) == 0) {
-        return S_ISDIR(st.st_mode);
-    }
-    
-    // Try to create directory
-    #ifdef _WIN32
-        return _mkdir(path.c_str()) == 0;
-    #else
-        return mkdir(path.c_str(), 0755) == 0;
-    #endif
-}
 
 void FileHandler::setUploadDirectory(const std::string& dir) {
     uploadDirectory = dir;
@@ -57,9 +25,7 @@ std::string FileHandler::getUploadDirectory() {
 }
 
 std::string FileHandler::sanitizeFilename(const std::string& filename) {
-    // First, decode URL-encoded characters (e.g., %20 -> space)
-    std::string decoded = urlDecode(filename);
-    std::string sanitized = decoded;
+    std::string sanitized = filename;
     
     // Remove or replace dangerous characters
     for (size_t i = 0; i < sanitized.length(); ++i) {
@@ -156,40 +122,8 @@ bool FileHandler::readBinaryFile(const std::string& filepath, std::vector<char>&
     return true;
 }
 
-bool FileHandler::writeFile(const std::string& filepath, const std::string& content) {
-    std::ofstream file(filepath.c_str());
-    if (!file.is_open()) {
-        return false;
-    }
-    
-    file << content;
-    file.close();
-    
-    return true;
-}
 
-bool FileHandler::writeBinaryFile(const std::string& filepath, const std::vector<char>& content) {
-    std::ofstream file(filepath.c_str(), std::ios::binary);
-    if (!file.is_open()) {
-        return false;
-    }
-    
-    file.write(&content[0], content.size());
-    file.close();
-    
-    return true;
-}
 
-size_t FileHandler::getFileSize(const std::string& filename) {
-    std::string fullPath = uploadDirectory + "/" + filename;
-    std::ifstream file(fullPath.c_str(), std::ios::binary | std::ios::ate);
-    if (file.is_open()) {
-        size_t size = static_cast<size_t>(file.tellg());
-        file.close();
-        return size;
-    }
-    return 0;
-}
 
 // BINARY-SAFE: Save binary file from vector<char>
 std::string FileHandler::saveUploadedBinaryFile(const std::string& originalFilename, 
@@ -277,21 +211,9 @@ std::string FileHandler::getFileName(const std::string& filepath) {
     return filepath;
 }
 
-std::string FileHandler::getDirectoryPath(const std::string& filepath) {
-    size_t pos = filepath.find_last_of("/\\");
-    if (pos != std::string::npos) {
-        return filepath.substr(0, pos);
-    }
-    return "";
-}
 
-bool FileHandler::isValidPath(const std::string& path) {
-    // Basic security check - prevent directory traversal
-    return path.find("..") == std::string::npos &&
-           path.find("//") == std::string::npos &&
-           !path.empty() &&
-           path[0] != '/';
-}
+
+
 
 // before:
 

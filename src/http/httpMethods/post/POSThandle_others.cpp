@@ -1,4 +1,5 @@
 #include "./POSThandler.hpp"
+#include "../../../../include/GlobalUtils.hpp"
 
 // Handler for text/plain content
 Response* POSThandler::handlePlainText(const Request& req, Response* response, const std::string& uri) {
