@@ -94,35 +94,24 @@ Response* GEThandler::handler(const Request& req, const LocationConfig* location
         std::string uri = req.getURI();
         std::string queryString;
 
-        // --------------------------------------------
-        // Fix 1: Strip query string from URI properly
-        // --------------------------------------------
         size_t queryPos = uri.find('?');
         if (queryPos != std::string::npos) {
             queryString = uri.substr(queryPos + 1);
             uri = uri.substr(0, queryPos);
         }
 
-        uri = urlDecode(uri); // decode %20 -> space
+        uri = urlDecode(uri);
 
-        // --------------------------------------------
-        // Fix 2: Pass cleaned URI to resolver
-        // --------------------------------------------
         std::string path = FileHandler::resolveFilePath(uri, location);
 
 
-        // Check if path exists (file or directory)
         if (!fileExists(path) && !isDirectory(path)) {
             delete response;
             return createErrorResponse(404, "Not Found");
         }
 
-        // ============================================
-        // Handle Directory Requests
-        // ============================================
         if (isDirectory(path)) {
 
-            // Fix 3: redirect /dir -> /dir/
             if (uri[uri.length() - 1] != '/') {
                 std::string redirectUri = uri + "/";
                 delete response;
@@ -144,84 +133,55 @@ Response* GEThandler::handler(const Request& req, const LocationConfig* location
             if (dirPath[dirPath.length() - 1] != '/')
                 dirPath += "/";
 
-            // ============================================
-            // Nginx Behavior Matrix: index + autoindex
-            // ============================================
-            // Case 1-2: Index file exists → serve it (autoindex ignored)
-            // Case 3: Index not found + autoindex ON → directory listing
-            // Case 4: Index not found + autoindex OFF → 403 Forbidden
-            // Case 11-12: No index directive → check autoindex
-            // ============================================
 
-            // Get index file from location config (empty string if not configured)
             std::string indexFile = location ? location->getIndex() : "";
             bool autoindex = location ? location->getAutoIndex() : false;
 
             
-            // Check if index directive is configured and not empty
             if (!indexFile.empty()) {
                 std::string indexPath = dirPath + indexFile;
 
-                // Check if index path exists
                 if (fileExists(indexPath)) {
-                    // File exists - check if it's readable
                     if (!isFileReadable(indexPath)) {
-                        // File exists but no read permission → 403 Forbidden
                         delete response;
                         return createErrorResponse(403, "Forbidden");
                     }
-                    // Case 1-2: Index file exists and is readable → serve it (autoindex ignored)
                     path = indexPath;
-                    // continue to serve below
                 } else {
-                    // Index configured but not found
                     
                     if (autoindex) {
-                        // Case 3: Index not found + autoindex ON → directory listing
                         delete response;
                         return generateDirectoryListing(uri, dirPath, req);
                     } else {
-                        // Case 4: Index not found + autoindex OFF → 403 Forbidden
                         delete response;
                         return createErrorResponse(403, "Forbidden");
                     }
                 }
             } else {
-                // No index directive configured (Cases 11-12)
                 
                 if (autoindex) {
-                    // Case 11: No index + autoindex ON → directory listing
                     delete response;
                     return generateDirectoryListing(uri, dirPath, req);
                 } else {
-                    // Case 12: No index + autoindex OFF → 403 Forbidden
                     delete response;
                     return createErrorResponse(403, "Forbidden");
                 }
             }
         }
 
-        // ============================================
-        // Serve Regular File
-        // ============================================
-        // At this point, path should be a file, not a directory
 
-        // Security check: ensure path is not a directory
         if (isDirectory(path)) {
             delete response;
             return createErrorResponse(403, "Forbidden");
         }
 
-        // Security: path traversal
         if (path.find("..") != std::string::npos) {
             delete response;
             return createErrorResponse(403, "Forbidden");
         }
 
-        // Check if file is readable before trying to open it
         if (!isFileReadable(path)) {
             delete response;
-            // File exists but no read permission
             if (fileExists(path)) {
                 return createErrorResponse(403, "Forbidden");
             } else {
@@ -247,10 +207,7 @@ Response* GEThandler::handler(const Request& req, const LocationConfig* location
         headers["Content-Length"] = numberToString(responseBody.size());
         headers["Content-Type"] = mimeType;
         
-        // If MIME type is unknown (application/octet-stream), add Content-Disposition
-        // to trigger download behavior like NGINX
         if (mimeType == "application/octet-stream") {
-            // Extract filename from path
             std::string filename = path;
             size_t lastSlash = path.find_last_of("/\\");
             if (lastSlash != std::string::npos) {
@@ -271,9 +228,6 @@ Response* GEThandler::handler(const Request& req, const LocationConfig* location
     }
 }
 
-// ============================================
-// Generate Directory Listing (Autoindex)
-// ============================================
 Response* GEThandler::generateDirectoryListing(const std::string& uri, 
                                                const std::string& dirPath,
                                                const Request& req) {
@@ -284,14 +238,12 @@ Response* GEThandler::generateDirectoryListing(const std::string& uri,
     response->setDate();
     response->setConnection("close");
 
-    // Open directory
     DIR* dir = opendir(dirPath.c_str());
     if (!dir) {
         delete response;
         return createErrorResponse(500, "Cannot read directory");
     }
 
-    // Read directory entries
 
     std::vector<DirectoryEntry> entries;
 
@@ -299,13 +251,11 @@ Response* GEThandler::generateDirectoryListing(const std::string& uri,
     while ((entry = readdir(dir)) != NULL) {
         std::string name = entry->d_name;
 
-        // Skip hidden files and parent directory
         if (name[0] == '.') continue;
 
         DirectoryEntry dirEntry;
         dirEntry.name = name;
 
-        // Get file info
         std::string fullPath = dirPath + name;
         struct stat statbuf;
         if (stat(fullPath.c_str(), &statbuf) == 0) {
@@ -320,10 +270,8 @@ Response* GEThandler::generateDirectoryListing(const std::string& uri,
     }
     closedir(dir);
 
-    // Sort entries: directories first, then files, alphabetically
     std::sort(entries.begin(), entries.end(), compareEntries);
 
-    // Generate HTML
     std::ostringstream html;
     html << "<!DOCTYPE html>\n";
     html << "<html lang=\"en\">\n";
@@ -366,7 +314,6 @@ Response* GEThandler::generateDirectoryListing(const std::string& uri,
     html << "            </thead>\n";
     html << "            <tbody>\n";
 
-    // Parent directory link
     if (uri != "/" && uri != "") {
         html << "                <tr>\n";
         html << "                    <td><span class=\"icon dir\">📁</span><a href=\"../\">Parent Directory</a></td>\n";
@@ -374,18 +321,16 @@ Response* GEThandler::generateDirectoryListing(const std::string& uri,
         html << "                </tr>\n";
     }
 
-    // List entries
 
     for (size_t i = 0; i < entries.size(); ++i) {
         const DirectoryEntry& e = entries[i];
 
-        // Ensure URI ends with /
         std::string baseUri = uri;
         if (baseUri[baseUri.length() - 1] != '/') {
             baseUri += "/";
         }
 
-        std::string href = baseUri + urlEncode(e.name);  // <-- encode here
+        std::string href = baseUri + urlEncode(e.name);
         if (e.isDir) href += "/";
 
         html << "                <tr>\n";
@@ -424,7 +369,6 @@ Response* GEThandler::generateDirectoryListing(const std::string& uri,
 
     std::string body = html.str();
 
-    // Set response
     response->setStatus(200);
     response->setBody(body);
 
@@ -437,7 +381,6 @@ Response* GEThandler::generateDirectoryListing(const std::string& uri,
     return response;
 }
 
-// Helper: Format file size
 std::string GEThandler::formatFileSize(off_t bytes) {
     std::ostringstream oss;
     
@@ -454,13 +397,10 @@ std::string GEThandler::formatFileSize(off_t bytes) {
     return oss.str();
 }
 
-// Helper: Compare directory entries for sorting
 bool GEThandler::compareEntries(const DirectoryEntry& a, const DirectoryEntry& b) {
-    // Directories first
     if (a.isDir && !b.isDir) return true;
     if (!a.isDir && b.isDir) return false;
     
-    // Then alphabetically
     return a.name < b.name;
 }
 

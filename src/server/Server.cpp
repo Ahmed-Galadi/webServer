@@ -1,23 +1,13 @@
-// ============ src/server/Server.cpp ============
 #include "Server.hpp"
 #include "./EventManager.hpp"
 #include "../client/Client.hpp"
 #include "../http/httpMethods/cgi/CGIhandler.hpp"
-#include <iostream>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <cstring>
-#include <errno.h>
-#include <algorithm>
 #include "../../include/GlobalUtils.hpp"
+#include "../../include/webserv.hpp"
 
 Server::Server(const std::vector<ServerConfig>& configs,
        const std::map<std::string, std::string>& env) : configs(configs), running(false) {
-    s_envMap = env;  // ✅ Set once in constructor
-    // ... rest of initialization
+    s_envMap = env;
 }
 
 std::map<std::string, std::string> Server::s_envMap;
@@ -39,14 +29,12 @@ void Server::initialize(EventManager& event_manager) {
 			throw std::runtime_error("Failed to create socket");
 		}
 
-		// Set socket to non-blocking
 		if (!setToNonBlocking(server_fd)) {
 			std::cerr << "[ERROR] Failed to set socket to non-blocking: " << strerror(errno) << std::endl;
 			close(server_fd);
 			throw std::runtime_error("Failed to set socket to non-blocking");
 		}
 
-		// Set SO_REUSEADDR
 		int opt = 1;
 		if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
 			std::cerr << "[ERROR] Failed to set SO_REUSEADDR: " << strerror(errno) << std::endl;
@@ -54,7 +42,6 @@ void Server::initialize(EventManager& event_manager) {
 			throw std::runtime_error("Failed to set SO_REUSEADDR");
 		}
 
-		// Bind socket
 		sockaddr_in server_addr;
 		std::memset(&server_addr, 0, sizeof(server_addr));
 		server_addr.sin_family = AF_INET;
@@ -77,7 +64,6 @@ void Server::initialize(EventManager& event_manager) {
 			throw std::runtime_error("Failed to bind socket to port " + oss.str());
 		}
 
-		// Start listening
 		if (listen(server_fd, SOMAXCONN) == -1) {
 			close(server_fd);
 			throw std::runtime_error("Failed to listen on socket");
@@ -87,7 +73,6 @@ void Server::initialize(EventManager& event_manager) {
 		try {
 			event_manager.addSocket(server_fd, this, EPOLLIN);
 		} catch (const std::exception& e) {
-			// Ensure we don't leak the server socket if epoll registration fails
 			std::cerr << "[ERROR] Failed to register server socket in epoll: " << e.what() << std::endl;
 			close(server_fd);
 			server_fds.pop_back();
@@ -103,19 +88,14 @@ void Server::run(EventManager& event_manager) {
 	running = true;
 	std::cout << "[INFO] Server started, waiting for connections..." << std::endl;
 	
-	epoll_event* events = new epoll_event[100]; // Create local event buffer
+	epoll_event* events = new epoll_event[100];
 	
 	while (running) {
-		   // Check CGI timeouts before waiting for events
         CGIhandler::checkCgiTimeouts(event_manager);
 
-		int nfds = event_manager.waitForEvents(events, 1000); // 1 second timeout to allow CGI timeout checks
+		int nfds = event_manager.waitForEvents(events, 1000);
 		
 		if (nfds == -1) {
-			// Per subject: cannot check errno after I/O operations
-			// epoll_wait returning -1 could be signal interruption or real error
-			// Since we can't check errno, we'll just continue
-			// A real error will likely repeat and cause other observable issues
 			continue;
 		}
 		
@@ -123,10 +103,8 @@ for (int i = 0; i < nfds; ++i)
 {
     epoll_event& event = events[i];
 
-    // Check if this is a server socket (new connection)
     if (event.data.ptr == this) 
     {
-        // Try accepting on all server sockets that have events
         for (size_t j = 0; j < server_fds.size(); ++j) {
             if (event.events & (EPOLLIN | EPOLLERR | EPOLLHUP)) {
                 acceptConnection(server_fds[j], event_manager);
@@ -135,14 +113,11 @@ for (int i = 0; i < nfds; ++i)
     }
     else
     {
-        // Try to identify if this is a CGI event
         bool isCgiEvent = false;
         
-        // Check all CGI executions to see if this event belongs to one
         for (std::map<int, CgiExecution*>::iterator it = CGIhandler::s_cgiExecutions.begin();
              it != CGIhandler::s_cgiExecutions.end(); ++it) {
             if (it->second == event.data.ptr) {
-                // This is a CGI event
                 CGIhandler::handleCgiEvent(it->first, event.events, event_manager);
                 isCgiEvent = true;
                 break;
@@ -150,16 +125,13 @@ for (int i = 0; i < nfds; ++i)
         }
         
         if (!isCgiEvent) {
-            // This is a client socket event
             Client* client = static_cast<Client*>(event.data.ptr);
             
-            // Validate the client pointer
             if (!client) {
                 std::cerr << "[ERROR] Null client pointer in event" << std::endl;
                 continue;
             }
             
-            // Additional validation: check if client is in our clients vector
             bool client_valid = false;
             for (size_t j = 0; j < clients.size(); ++j) {
                 if (clients[j] == client) {
@@ -184,7 +156,6 @@ for (int i = 0; i < nfds; ++i)
             }
             else if (event.events & EPOLLOUT)
             {
-                // Check if waiting for CGI
                 if (client->isWaitingForCgi()) {
                     continue;
                 }
@@ -193,16 +164,6 @@ for (int i = 0; i < nfds; ++i)
         }
     }
 }
-		// Clean up timed out clients
-		for (std::vector<Client*>::iterator it = clients.begin(); it != clients.end();) {
-			if ((*it)->isTimedOut()) {
-				(*it)->closeConnection(event_manager);
-				delete *it;
-				it = clients.erase(it);
-			} else {
-				++it;
-			}
-		}
 	}
 	
 	delete[] events;
@@ -211,13 +172,11 @@ for (int i = 0; i < nfds; ++i)
 void Server::shutdown() {
 	running = false;
 	
-	// Close all client connections
 	for (size_t i = 0; i < clients.size(); ++i) {
 		delete clients[i];
 	}
 	clients.clear();
 	
-	// Close all server sockets
 	for (size_t i = 0; i < server_fds.size(); ++i) {
 		close(server_fds[i]);
 	}
@@ -231,20 +190,15 @@ void Server::acceptConnection(int server_fd, EventManager& event_manager)
 	
 	int client_fd = accept(server_fd, (sockaddr*)&client_addr, &client_len);
 	if (client_fd == -1) {
-		// Per subject requirements: CANNOT check errno after I/O operations
-		// For non-blocking accept(), -1 is normal when no connections are pending
-		// Just return and wait for next epoll event
 		return;
 	}
 	
-	// Set client socket to non-blocking
 	if (!setToNonBlocking(client_fd)) {
 		std::cerr << "[ERROR] Failed to set client socket to non-blocking: " << strerror(errno) << std::endl;
 		close(client_fd);
 		return;
 	}
 	
-	// Find the appropriate server config
 	ServerConfig* config = NULL;
 	for (size_t i = 0; i < server_fds.size(); ++i) {
 		if (server_fds[i] == server_fd) {
@@ -259,20 +213,14 @@ void Server::acceptConnection(int server_fd, EventManager& event_manager)
 		return;
 	}
 	
-	// Create new client
 	Client* client = new Client(client_fd, config);
 	client->setEventManager(&event_manager);
 	clients.push_back(client);
 
-	// Add client to epoll in Level-Triggered mode (not Edge-Triggered)
-	// LT mode: epoll continues to notify while data is available
-	// ET mode: epoll only notifies once when new data arrives (would require reading all data at once)
-	// Since we read once per epoll event (per subject requirements), we need LT mode
 	try {
 		event_manager.addSocket(client_fd, client, EPOLLIN | EPOLLERR | EPOLLHUP);
 	} catch (const std::exception& e) {
 		std::cerr << "[ERROR] Failed to register client socket in epoll: " << e.what() << std::endl;
-		// Cleanup to avoid FD and memory leaks
 		clients.erase(std::remove(clients.begin(), clients.end(), client), clients.end());
 		delete client;
 		close(client_fd);
@@ -285,7 +233,6 @@ void Server::acceptConnection(int server_fd, EventManager& event_manager)
 	std::cout << "[INFO] New connection from " << client_ip 
 			  << ":" << ntohs(client_addr.sin_port) << " on fd=" << client_fd << std::endl;
 }
-// Getters
 const std::vector<int>& Server::getServerFds() const {
 	return server_fds;
 }

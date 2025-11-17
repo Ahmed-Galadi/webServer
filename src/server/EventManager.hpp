@@ -1,14 +1,7 @@
-// ============ src/server/ConnectionManager.hpp ============
-#ifndef CONNECTIONMANAGER_HPP
-#define CONNECTIONMANAGER_HPP
-
-#include "../../include/webserv.hpp"
-
 #ifndef EVENT_MANAGER_HPP
 #define EVENT_MANAGER_HPP
 
-class Server;
-class Client;
+#include "../../include/webserv.hpp"
 
 class EventManager {
 private:
@@ -23,7 +16,5 @@ public:
     void modifySocket(int fd, void* data, uint32_t events);
     int waitForEvents(epoll_event* event_buffer, int timeout);
 };
-
-#endif
 
 #endif

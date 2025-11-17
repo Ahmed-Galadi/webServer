@@ -6,7 +6,6 @@
 
 class RequestParser {
 public:
-    // Existing static methods
     static void                     boundariesError(std::string &rawBody, const std::string &boundary);
     static void                     extractMultiPart(std::vector<RequestBody> &output, const std::string &bodyRawStr, const std::string &boundary);
     static void                     extractEncodedData(RequestBody &rb, const std::string &bodyRawStr, const std::string &type);
@@ -14,11 +13,7 @@ public:
     static void                     extractOctetStream(RequestBody &rb, const std::string &rawData);
     static RequestBody              extractBodyPart(const std::string &rawBodyPart);
     static void                     parseHexa(std::string &hexString);
-    
-    // Main parsing method
     static std::vector<RequestBody> ParseBody(const Request &req);
-    
-    // FIXED: Make all these methods static
     static std::vector<RequestBody> parseMultipartFormData(const Request& req, const std::string& contentType);
     static std::vector<RequestBody> parseMultipartBinary(const std::vector<char>& data, const std::string& boundary);
     static RequestBody parseMultipartPart(const std::vector<char>& data, size_t start, size_t end);

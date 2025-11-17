@@ -73,7 +73,6 @@ std::vector<std::string> ParseUtils::splitAndAccumulate(std::vector<std::string>
 	unsigned int				index_out;
 
 	for (index_in = 0; index_in < fileData.size(); index_in++) {
-		// Trim whitespace (including tabs) from the line before splitting
 		std::string trimmedLine = trim(fileData[index_in]);
 		std::vector<std::string> splitedStr = splitString(trimmedLine, ' ');
 		for(index_out = 0; index_out < splitedStr.size(); index_out++)
@@ -123,17 +122,17 @@ size_t ParseUtils::parseMaxBodySize(const std::string &value)
 
 	if (unit == 'k' || unit == 'K')
 	{
-		multiplier = 1024ULL;
+		multiplier = 1024UL;
 		num = value.substr(0, value.size() - 1);
 	}
 	else if (unit == 'm' || unit == 'M')
 	{
-		multiplier = 1024ULL * 1024ULL;
+		multiplier = 1024UL * 1024UL;
 		num = value.substr(0, value.size() - 1);
 	}
 	else if (unit == 'g' || unit == 'G')
 	{
-		multiplier = 1024ULL * 1024ULL * 1024ULL;
+		multiplier = 1024UL * 1024UL * 1024UL;
 		num = value.substr(0, value.size() - 1);
 	}
 
@@ -149,7 +148,7 @@ size_t ParseUtils::parseMaxBodySize(const std::string &value)
 			throw std::invalid_argument("Invalid character in body size: " + value);
 	}
 
-	unsigned long long numeric_value = 0;
+	unsigned long numeric_value = 0;
 	try
 	{
 		numeric_value = strtoull(num.c_str(), NULL, 10);
@@ -164,7 +163,7 @@ size_t ParseUtils::parseMaxBodySize(const std::string &value)
 
 	size_t result = numeric_value * multiplier;
 
-	const size_t MAX_ALLOWED = 1024ULL * 1024ULL * 1024ULL;
+	const size_t MAX_ALLOWED = 1024UL * 1024UL * 1024UL;
 	if (result > MAX_ALLOWED)
 		throw std::runtime_error("Max body size exceeds 1 GB limit");
 

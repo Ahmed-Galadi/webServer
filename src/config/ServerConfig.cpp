@@ -1,7 +1,7 @@
 
 #include "ServerConfig.hpp"
 
-ServerConfig::ServerConfig() : client_max_body_size(1024 * 1024), autoindex(false) {}
+ServerConfig::ServerConfig() : port(-1), host(""), root(""), client_max_body_size(1024 * 1024), autoindex(false) {}
 
 void	ServerConfig::setPort(int portNum) {
 	port = portNum;

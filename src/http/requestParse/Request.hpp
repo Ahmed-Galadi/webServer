@@ -8,7 +8,6 @@ class Request {
 public:
     Request(std::string rawRequest);
 
-    // Accessors
     std::string getMethod() const;
     std::string getURI() const;
     std::string getVersion() const;
@@ -16,13 +15,11 @@ public:
     std::map<std::string, std::string> getHeaders() const;
     std::map<std::string, std::string> getQuery() const;
     std::vector<RequestBody> getBody();
-    // BINARY-SAFE: New methods
     const std::vector<char>& getRawBinaryBody() const;
     const std::vector<char>& getBinaryBody() const { return binaryBody; };
     void setBinaryBody(const std::vector<char>& data) { binaryBody = data; };
     void extractBinaryBody(const char* data, size_t size);
 
-    // Exceptions
     class InvalidRequest : public std::exception {
         public: const char* what() const throw();
     };
@@ -40,7 +37,7 @@ private:
     std::string method;
     std::string uri;
     std::string version;
-    std::string body;              // String version (may truncate at null bytes)
+    std::string body;
     std::vector<char> binaryBody;  
     std::map<std::string, std::string> headers;
     std::map<std::string, std::string> query;

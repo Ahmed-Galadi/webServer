@@ -8,7 +8,8 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1c1e26 0%, #2a2d39 100%);
+            color: #f0f2f5;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -16,43 +17,58 @@
             padding: 20px;
         }
         .container {
-            background: white;
+            background: #252831;
             border-radius: 15px;
             padding: 50px;
-            max-width: 800px;
+            max-width: 1200px;
+            width: 100%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             text-align: center;
         }
         h1 {
-            color: #667eea;
+            color: #61dafb;
             font-size: 3em;
             margin-bottom: 20px;
         }
         .subtitle {
-            color: #666;
+            color: #a7b0c0;
             font-size: 1.3em;
             margin-bottom: 40px;
         }
         .nav-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
             margin-top: 30px;
         }
+        @media (max-width: 900px) {
+            .nav-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 600px) {
+            .nav-grid {
+                grid-template-columns: 1fr;
+            }
+        }
         .nav-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 20px;
-            border-radius: 10px;
+            background: linear-gradient(135deg, #2a2d39 0%, #3b4049 100%);
+            color: #f0f2f5;
+            padding: 35px 25px;
+            border-radius: 12px;
             text-decoration: none;
             transition: transform 0.3s, box-shadow 0.3s;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            min-height: 150px;
+            border: 2px solid transparent;
         }
         .nav-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+            box-shadow: 0 10px 30px rgba(97, 218, 251, 0.2);
+            border-color: rgba(97, 218, 251, 0.3);
         }
         .nav-card .icon {
             font-size: 3em;
@@ -69,20 +85,38 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚀 Webserv</h1>
-        <p class="subtitle">HTTP/1.0 Web Server</p>
+        <h1>Webserv</h1>
+        <p class="subtitle">HTTP/1.0 Web Server · Quick Test Panel</p>
 
         <div class="nav-grid">
+            <a href="/cgi-bin/product-search.js" class="nav-card">
+                <h3>Product Search</h3>
+                <p>Search for products in our database</p>
+            </a>
+
             <a href="/cgi-bin/email-validator.js" class="nav-card">
-                <div class="icon">✉️</div>
                 <h3>Email Validator</h3>
-                <p>Validate email format</p>
+                <p>Validate an email address</p>
+            </a>
+
+            <a href="/cgi-bin/form.js" class="nav-card">
+                <h3>POST Form (CGI)</h3>
+                <p>Submit a classic form to CGI</p>
             </a>
 
             <a href="/drive.html" class="nav-card">
-                <div class="icon">💾</div>
                 <h3>Drive</h3>
                 <p>Upload & manage files</p>
+            </a>
+
+            <a href="/upload/" class="nav-card">
+                <h3>Uploads</h3>
+                <p>Browse uploaded files</p>
+            </a>
+
+            <a href="/cgi-bin/memory-game.py" class="nav-card">
+                <h3>Memory Game</h3>
+                <p>Match pairs in this fun 4x4 game</p>
             </a>
         </div>
 
@@ -90,5 +124,6 @@
             <p>Webserv v1.0 | Built with C++98</p>
         </div>
     </div>
+
 </body>
 </html>

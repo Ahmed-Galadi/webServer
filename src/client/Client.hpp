@@ -22,12 +22,8 @@ private:
     size_t bytes_written;
     time_t last_activity;
     ServerConfig* serverConfig;
-        // NEW: Store EventManager reference for CGI
     EventManager* eventManager;
-     // NEW: CGI tracking
-    bool waitingForCgi;  // True if this client is waiting for CGI to complete
-    void modifySocketForWrite(EventManager& event_mgr);
-    void modifySocketForRead(EventManager& event_mgr);
+    bool waitingForCgi;
 public:
     Client(int fd, ServerConfig* serverConfig);
     virtual ~Client();
@@ -36,15 +32,9 @@ public:
     void closeConnection(EventManager& event_mgr);
     void parseRequest();
     void buildResponse();
-    bool isTimedOut() const;
-    int getFd() const;
-    void setServerConfig( ServerConfig* config);
-    const ServerConfig* getServerConfig() const;
-        // NEW: CGI-related methods
     void setWaitingForCgi(bool waiting) { waitingForCgi = waiting; }
     bool isWaitingForCgi() const { return waitingForCgi; }
-    void setCgiResponse(Response* res);  // Called when CGI completes
-        // NEW: Set EventManager
+    void setCgiResponse(Response* res);
     void setEventManager(EventManager* mgr) { eventManager = mgr; }
     
 };

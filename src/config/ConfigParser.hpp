@@ -11,7 +11,7 @@ class ConfigParser {
 
 		static	ParsingBlock 		makeServerBlock(std::vector<std::string>::iterator &tokens, std::vector<std::string>::iterator tokensEnd);
 		static	ParsingBlock 		makeLocationBlock(std::vector<std::string>::iterator &tokens);
-		static	LocationConfig		makeLocationConfig(std::vector<std::string>::iterator &tokens);
+		static	LocationConfig		makeLocationConfig(std::vector<std::string>::iterator &tokens, std::vector<std::string>::iterator tokensEnd);
 		static	ServerConfig		makeServerConfig(ParsingBlock servBlock);
 	public:
 		void						parse(std::string config_file);

@@ -7,21 +7,17 @@
 #include <sstream>
 #include <sys/stat.h>
 
-// static exit codes
 static const std::map<int, std::string> initExitCodes() {
     std::map<int, std::string> output;
     
-    // 2xx Success
     output[200] = "OK";
     output[201] = "Created";
     output[204] = "No Content";
     
-    // 3xx Redirection
     output[301] = "Moved Permanently";
     output[302] = "Found";
     output[304] = "Not Modified";
     
-    // 4xx Client Error
     output[400] = "Bad Request";
     output[401] = "Unauthorized";
     output[403] = "Forbidden";
@@ -35,7 +31,6 @@ static const std::map<int, std::string> initExitCodes() {
     output[414] = "Request-URI Too Long";
     output[415] = "Unsupported Media Type";
     
-    // 5xx Server Error
     output[500] = "Internal Server Error";
     output[501] = "Not Implemented";
     output[502] = "Bad Gateway";
@@ -47,17 +42,11 @@ static const std::map<int, std::string> initExitCodes() {
 }
 const std::map<int, std::string> Response::EXIT_CODES = initExitCodes();
 
-// static members
-
-// Response.cpp - Updated makeErrorResponse() method with 3-tier fallback
-
-// Helper function to check if file exists and is readable
 static bool fileExists(const std::string& path) {
     struct stat buffer;
     return (stat(path.c_str(), &buffer) == 0 && S_ISREG(buffer.st_mode));
 }
 
-// Helper function to read file content
 static std::string readFileContent(const std::string& path) {
     std::ifstream file(path.c_str());
     if (!file.is_open()) {
@@ -83,7 +72,6 @@ Response* Response::makeErrorResponse(int status, const ServerConfig* serverConf
     outputResponse->setDate();
     outputResponse->setConnection("close");
     
-    // TIER 1: Try to read custom error page from ServerConfig
     if (serverConfig != NULL) {
         std::map<int, std::string> errorPages = serverConfig->getErrorPages();
         std::map<int, std::string>::const_iterator it = errorPages.find(status);
@@ -92,20 +80,15 @@ Response* Response::makeErrorResponse(int status, const ServerConfig* serverConf
             std::string configPath = it->second;
             std::string fullPath;
             
-            // Handle different path formats
             if (configPath.length() > 0 && configPath[0] == '/') {
-                // Path starts with / - relative to server root
                 std::string root = serverConfig->getRoot();
                 if (root.empty()) {
                     root = "www";
                 }
-                // Remove leading slash from configPath
                 fullPath = root + configPath;
             } else if (configPath.length() > 1 && configPath[0] == '.' && configPath[1] == '/') {
-                // Path starts with ./ - relative to project root
-                fullPath = configPath.substr(2); // Remove "./"
+                fullPath = configPath.substr(2);
             } else {
-                // Assume relative to server root
                 std::string root = serverConfig->getRoot();
                 if (root.empty()) {
                     root = "www";
@@ -122,7 +105,6 @@ Response* Response::makeErrorResponse(int status, const ServerConfig* serverConf
         }
     }
     
-    // TIER 2: Try default error_pages directory
     if (!foundErrorPage) {
         std::string fileName = "error_pages/" + ParseUtils::toString(status) + ".html";
         if (fileExists(fileName)) {
@@ -133,7 +115,6 @@ Response* Response::makeErrorResponse(int status, const ServerConfig* serverConf
         }
     }
     
-    // TIER 3: Generate simple HTML error page
     if (!foundErrorPage) {
         std::map<int, std::string>::const_iterator it = EXIT_CODES.find(status);
         std::string statusMessage = (it != EXIT_CODES.end()) ? it->second : "Error";
@@ -141,7 +122,6 @@ Response* Response::makeErrorResponse(int status, const ServerConfig* serverConf
         errorBody = "<html><head><title>" + ParseUtils::toString(status) + " " + statusMessage + "</title></head>";
         errorBody += "<body><h1>" + ParseUtils::toString(status) + " " + statusMessage + "</h1>";
         
-        // Add helpful message based on status code
         if (status == 405) {
             tmpPair.first = "Allow";
             tmpPair.second = "GET, POST, DELETE";
@@ -177,10 +157,8 @@ Response* Response::makeErrorResponse(int status, const ServerConfig* serverConf
         errorBody += "</body></html>";
     }
     
-    // Set body
     outputResponse->body = errorBody;
     
-    // Set Content-Type and Content-Length headers
     tmpPair.first = "Content-Type";
     tmpPair.second = "text/html";
     headers.insert(tmpPair);
@@ -195,7 +173,6 @@ Response* Response::makeErrorResponse(int status, const ServerConfig* serverConf
     return outputResponse;
 }
 
-// setters
 void	Response::setStatus(int statusCode) {
 	this->status = statusCode;
 }
@@ -236,7 +213,6 @@ void Response::addHeader(const std::string &key, const std::string &value)
 }
 
 
-// getters
 int	Response::getStatus() const {
 	return (status);
 }
@@ -265,18 +241,15 @@ std::string Response::getDate() const {
 	return (date);
 }
 
-// to string
 std::string	Response::toString() const {
 	std::stringstream stream;
 
-	// version and status line
 	stream << version << " " << status << " ";
 	std::map<int, std::string>::const_iterator exitIt = EXIT_CODES.find(status);
 	if (exitIt != EXIT_CODES.end())
     	stream << exitIt->second << "\r\n";
 	else
     	stream << "Unknown Status Code\r\n";
-	// headers
 	std::map<std::string, std::string>::const_iterator headersIter = headers.begin();
 	for (; headersIter != headers.end(); headersIter++)
 		stream << headersIter->first << ": " << headersIter->second << "\r\n";
@@ -286,9 +259,7 @@ std::string	Response::toString() const {
 		stream << "Date: " << date << "\r\n";
 	if (!connection.empty())
 		stream << "Connection: " << connection << "\r\n";
-	// separator
 	stream << "\r\n";
-	// body
 	if (!body.empty())
 		stream << body;
 	return (stream.str());

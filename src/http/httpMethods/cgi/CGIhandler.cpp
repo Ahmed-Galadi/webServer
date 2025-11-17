@@ -13,7 +13,6 @@
 #include <sys/stat.h>
 #include "../../../../include/GlobalUtils.hpp"
 
-// Initialize static members
 std::map<int, CgiExecution*> CGIhandler::s_cgiExecutions;
 const int CGIhandler::CGI_TIMEOUT_SECONDS;
 
@@ -40,12 +39,8 @@ CGIhandler::CGIhandler() {
 CGIhandler::~CGIhandler() {
 }
 
-// Modified handler() - now starts async CGI instead of blocking
 Response* CGIhandler::handler(const Request &req, const LocationConfig* location, const ServerConfig* serverConfig) {
     
-    // This method is called from Client::buildResponse()
-    // It should NOT be used for async CGI - return NULL to indicate async processing
-    // The actual async CGI is started via startCgiExecution() called from Client
     (void)req;
     (void)location;
     (void)serverConfig;
@@ -60,14 +55,12 @@ Response* CGIhandler::handler(const Request &req, const LocationConfig* location
     return res;
 }
 
-// NEW: Start async CGI execution
 bool CGIhandler::startCgiExecution(const Request &req,
                                    const LocationConfig* location,
                                    const ServerConfig* serverConfig,
                                    Client* client,
                                    EventManager& eventMgr) {
     
-    // Resolve script path
     std::string uriPath = stripQueryString(req.getURI());
     if (!uriPath.empty() && uriPath[uriPath.size() - 1] == '/')
         uriPath.erase(uriPath.size() - 1);
@@ -78,7 +71,6 @@ bool CGIhandler::startCgiExecution(const Request &req,
     
     std::string scriptPath = joinPathsNormalize(root, uriPath);
     
-    // Normalize path (remove //)
     std::string normalized;
     for (size_t i = 0; i < scriptPath.size(); ++i) {
         if (i+1 < scriptPath.size() && scriptPath[i] == '/' && scriptPath[i+1] == '/') {
@@ -88,7 +80,6 @@ bool CGIhandler::startCgiExecution(const Request &req,
     }
     scriptPath = normalized;
     
-    // Check if path is a directory - directories cannot be executed as CGI scripts
     struct stat pathStat;
     if (stat(scriptPath.c_str(), &pathStat) == 0 && S_ISDIR(pathStat.st_mode)) {
         Response *res = new Response();
@@ -105,11 +96,15 @@ bool CGIhandler::startCgiExecution(const Request &req,
         return false;
     }
     
-    // Validate script exists and is executable
-    if (access(scriptPath.c_str(), X_OK) != 0) {
+    bool needsExec = true;
+    if (scriptPath.size() > 3) {
+        std::string ext = scriptPath.substr(scriptPath.size() - 3);
+        if (ext == ".py" || ext == ".js") needsExec = false;
+    }
+    if ((needsExec && access(scriptPath.c_str(), X_OK) != 0) || (!needsExec && access(scriptPath.c_str(), R_OK) != 0)) {
         
         Response *res = new Response();
-        std::string body = "404 Not Found: CGI script not found or not executable.";
+        std::string body = "404 Not Found: CGI script not found or cannot be executed.";
         res->setStatus(404);
         res->setVersion("HTTP/1.0");
         res->setBody(body);
@@ -122,15 +117,12 @@ bool CGIhandler::startCgiExecution(const Request &req,
         return false;
     }
     
-    // Build environment variables
     CGIhandler tempHandler;
     std::vector<char*> env = tempHandler.buildEnv(req, location, serverConfig);
     
-    // Create socketpair for communication
     int socketPair[2];
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, socketPair) == -1) {
         
-        // Free env
         for (size_t i = 0; i < env.size(); ++i) {
             if (env[i]) free(env[i]);
         }
@@ -147,14 +139,12 @@ bool CGIhandler::startCgiExecution(const Request &req,
         return false;
     }
     
-    // Fork and exec CGI script
     pid_t pid;
     if (!forkAndExecCgi(scriptPath, env, socketPair, pid)) {
         
         close(socketPair[0]);
         close(socketPair[1]);
         
-        // Free env
         for (size_t i = 0; i < env.size(); ++i) {
             if (env[i]) free(env[i]);
         }
@@ -171,19 +161,14 @@ bool CGIhandler::startCgiExecution(const Request &req,
         return false;
     }
     
-    // Free env (child has its own copy)
     for (size_t i = 0; i < env.size(); ++i) {
         if (env[i]) free(env[i]);
     }
     
-    // Close child's end in parent
     close(socketPair[1]);
     
-    // Set parent's end to non-blocking
-    // Set parent's end to non-blocking
     setToNonBlocking(socketPair[0]);
     
-    // Create execution tracker
     CgiExecution* exec = new CgiExecution();
     exec->pid = pid;
     exec->socketFd = socketPair[0];
@@ -195,29 +180,24 @@ bool CGIhandler::startCgiExecution(const Request &req,
     exec->startTime = time(NULL);
     exec->state = CGI_WRITING_BODY;
     
-    // Add to tracking map
     s_cgiExecutions[socketPair[0]] = exec;
 
-    // Add socket to epoll for writing (to send request body)
     try {
         eventMgr.addSocket(socketPair[0], exec, EPOLLOUT | EPOLLERR | EPOLLHUP);
     } catch (const std::exception& e) {
         std::cerr << "[ERROR] Failed to register CGI socket in epoll: " << e.what() << std::endl;
-        // Cleanup to avoid FD and memory leaks
         s_cgiExecutions.erase(socketPair[0]);
         if (exec->socketFd > 0) close(exec->socketFd);
         delete exec;
         return false;
     }
     
-    // Mark client as waiting for CGI
     client->setWaitingForCgi(true);
     
     
     return true;
 }
 
-// NEW: Fork and exec CGI script
 bool CGIhandler::forkAndExecCgi(const std::string &scriptPath,
                                 const std::vector<char*> &env,
                                 int socketPair[2],
@@ -229,50 +209,42 @@ bool CGIhandler::forkAndExecCgi(const std::string &scriptPath,
     }
     
     if (pid == 0) {
-        // CHILD PROCESS
         
-        // Close parent's end
         close(socketPair[0]);
         
-        // Redirect stdin/stdout/stderr to socket
         if (dup2(socketPair[1], STDIN_FILENO) == -1 || dup2(socketPair[1], STDOUT_FILENO) == -1 ){
-          //  dup2(socketPair[1], STDERR_FILENO) == -1) {
             _exit(127);
         }
         
         close(socketPair[1]);
         
-        // MANDATORY: Change to script directory for relative path access
-        std::string scriptDir = scriptPath.substr(0, scriptPath.find_last_of('/'));
-        if (scriptDir.empty()) scriptDir = ".";
+        std::string dir = scriptPath.substr(0, scriptPath.find_last_of('/'));
+        if (dir.empty()) dir = ".";
         
-        if (chdir(scriptDir.c_str()) == -1) {
-            _exit(127);
+        if (chdir(dir.c_str()) != 0) {
+            std::cerr << "[ERROR] chdir to " << dir << " failed: " << strerror(errno) << std::endl;
+            exit(127);
+        }
+
+        std::string scriptFilename = scriptPath.substr(scriptPath.find_last_of('/') + 1);
+
+        if (scriptPath.size() > 3 && scriptPath.substr(scriptPath.size() - 3) == ".py") {
+            char* const argv[] = { const_cast<char*>("/usr/bin/python3"), const_cast<char*>(scriptFilename.c_str()), NULL };
+            execve("/usr/bin/python3", argv, const_cast<char* const*>(env.data()));
+            std::cerr << "[ERROR] execve python3 failed for " << scriptFilename << ": " << strerror(errno) << std::endl;
+        } else {
+            char* const argv[] = { const_cast<char*>(scriptFilename.c_str()), NULL };
+            execve(scriptFilename.c_str(), argv, const_cast<char* const*>(env.data()));
+            std::cerr << "[ERROR] execve failed for " << scriptFilename << ": " << strerror(errno) << std::endl;
         }
         
-        // Get just the filename for execution
-        std::string scriptFilename = scriptPath.substr(scriptPath.find_last_of('/') + 1);
-        
-        // Prepare argv for execve
-        char *argvExec[4];
-        argvExec[0] = (char*)"/usr/bin/env";
-        argvExec[1] = (char*)"node";
-        argvExec[2] = const_cast<char*>(scriptFilename.c_str());
-        argvExec[3] = NULL;
-        
-        // Execute
-        execve("/usr/bin/env", argvExec, const_cast<char* const*>(&env[0]));
-        
-        // If we get here, execve failed
-        _exit(127);
+        exit(127);
     }
-    
-    // PARENT PROCESS
+
     outPid = pid;
     return true;
 }
 
-// NEW: Handle epoll events for CGI socket
 void CGIhandler::handleCgiEvent(int fd, uint32_t events, EventManager& eventMgr) {
     std::map<int, CgiExecution*>::iterator it = s_cgiExecutions.find(fd);
     if (it == s_cgiExecutions.end()) {
@@ -282,33 +254,25 @@ void CGIhandler::handleCgiEvent(int fd, uint32_t events, EventManager& eventMgr)
     CgiExecution* exec = it->second;
     
     
-    // Handle EPOLLERR (true errors)
     if (events & EPOLLERR) {
         exec->state = CGI_ERROR;
         finalizeCgiExecution(exec, eventMgr);
         return;
     }
     
-    // Handle EPOLLHUP (hangup - CGI closed connection)
-    // This is NORMAL when CGI finishes - try to read remaining data first
     if (events & EPOLLHUP) {
         if (exec->state == CGI_READING_OUTPUT) {
-            // Try to read any remaining data
             handleCgiRead(exec, eventMgr);
             
-            // Check if handleCgiRead already finalized (it does if EOF is detected)
-            // After finalization, the exec is deleted and removed from map
             if (s_cgiExecutions.find(fd) == s_cgiExecutions.end()) {
                 return;
             }
         }
-        // Mark as complete and finalize
         exec->state = CGI_COMPLETE;
         finalizeCgiExecution(exec, eventMgr);
         return;
     }
     
-    // Handle state-specific I/O
     if (exec->state == CGI_WRITING_BODY && (events & EPOLLOUT)) {
         handleCgiWrite(exec, eventMgr);
     } else if (exec->state == CGI_READING_OUTPUT && (events & EPOLLIN)) {
@@ -316,21 +280,16 @@ void CGIhandler::handleCgiEvent(int fd, uint32_t events, EventManager& eventMgr)
     }
 }
 
-// NEW: Handle writing request body to CGI
 void CGIhandler::handleCgiWrite(CgiExecution* exec, EventManager& eventMgr) {
     if (exec->requestBody.empty() || exec->bodyBytesWritten >= exec->requestBody.size()) {
-        // Nothing to write or already done
         
-        // Shutdown write side to signal EOF to CGI
         shutdown(exec->socketFd, SHUT_WR);
         
-        // Switch to reading mode
         exec->state = CGI_READING_OUTPUT;
         eventMgr.modifySocket(exec->socketFd, exec, EPOLLIN | EPOLLERR | EPOLLHUP);
         return;
     }
     
-    // Write as much as possible
     size_t remaining = exec->requestBody.size() - exec->bodyBytesWritten;
     ssize_t written = write(exec->socketFd, 
                            exec->requestBody.c_str() + exec->bodyBytesWritten,
@@ -339,19 +298,15 @@ void CGIhandler::handleCgiWrite(CgiExecution* exec, EventManager& eventMgr) {
     if (written > 0) {
         exec->bodyBytesWritten += written;
         
-        // Check if done
         if (exec->bodyBytesWritten >= exec->requestBody.size()) {
             shutdown(exec->socketFd, SHUT_WR);
             exec->state = CGI_READING_OUTPUT;
             eventMgr.modifySocket(exec->socketFd, exec, EPOLLIN | EPOLLERR | EPOLLHUP);
         }
     } else if (written < 0) {
-        // Error or would block (EAGAIN/EWOULDBLOCK)
-        // In Level-Triggered mode, epoll will notify us again when ready
     }
 }
 
-// NEW: Handle reading CGI output
 void CGIhandler::handleCgiRead(CgiExecution* exec, EventManager& eventMgr) {
     char buffer[8192];
     ssize_t bytes = read(exec->socketFd, buffer, sizeof(buffer));
@@ -359,31 +314,24 @@ void CGIhandler::handleCgiRead(CgiExecution* exec, EventManager& eventMgr) {
     if (bytes > 0) {
         exec->output.append(buffer, bytes);
     } else if (bytes == 0) {
-        // EOF - CGI finished writing
         exec->state = CGI_COMPLETE;
         finalizeCgiExecution(exec, eventMgr);
     } else {
-        // Error or would block
     }
 }
 
-// NEW: Finalize CGI execution and send response to client
 void CGIhandler::finalizeCgiExecution(CgiExecution* exec, EventManager& eventMgr) {
     
-    // Wait for child process
     int status;
     pid_t result = waitpid(exec->pid, &status, WNOHANG);
     
     if (result == 0) {
-        // Still running - check if we should wait a bit or kill it
         if (exec->state == CGI_TIMEOUT || exec->state == CGI_ERROR) {
-            // Timeout or error - kill it
             kill(exec->pid, SIGKILL);
             waitpid(exec->pid, &status, 0);
             exec->scriptExitCode = -1;
         } else {
-            // Normal completion but process hasn't exited yet - wait for it
-            result = waitpid(exec->pid, &status, 0); // Block and wait
+            result = waitpid(exec->pid, &status, 0);
             if (result > 0 && WIFEXITED(status)) {
                 exec->scriptExitCode = WEXITSTATUS(status);
             } else {
@@ -397,29 +345,22 @@ void CGIhandler::finalizeCgiExecution(CgiExecution* exec, EventManager& eventMgr
             exec->scriptExitCode = -1;
         }
     } else {
-        // waitpid failed
         exec->scriptExitCode = -1;
     }
     
-    // Build response
     Response* response = NULL;
     
     if (exec->state == CGI_TIMEOUT) {
-        // Use standard error response which loads from www/error/504.html
         response = Response::makeErrorResponse(504, exec->serverConfig);
     } else if (exec->state == CGI_ERROR) {
-        // Use standard error response which loads from www/error/500.html
         response = Response::makeErrorResponse(500, exec->serverConfig);
     } else if (exec->scriptExitCode != 0) {
-        // Script exited with error - use standard error response
         response = Response::makeErrorResponse(500, exec->serverConfig);
     } else {
-        // Success - parse CGI output
         CGIhandler tempHandler;
         response = tempHandler.parseCgiOutput(exec->output, exec->scriptExitCode);
     }
     
-    // Add Content-Length if missing
     if (response) {
         std::map<std::string, std::string> headers = response->getHeaders();
         if (headers.find("Content-Length") == headers.end()) {
@@ -430,15 +371,12 @@ void CGIhandler::finalizeCgiExecution(CgiExecution* exec, EventManager& eventMgr
         response->setConnection("close");
     }
     
-    // Send response to client
     exec->client->setCgiResponse(response);
     exec->client->setWaitingForCgi(false);
     
-    // Cleanup
     cleanupCgiExecution(exec->socketFd, eventMgr);
 }
 
-// NEW: Cleanup CGI execution
 void CGIhandler::cleanupCgiExecution(int fd, EventManager& eventMgr) {
     std::map<int, CgiExecution*>::iterator it = s_cgiExecutions.find(fd);
     if (it == s_cgiExecutions.end()) {
@@ -448,22 +386,17 @@ void CGIhandler::cleanupCgiExecution(int fd, EventManager& eventMgr) {
     CgiExecution* exec = it->second;
     
     
-    // Remove from epoll
     eventMgr.removeSocket(fd);
     
-    // Close socket
     if (exec->socketFd > 0) {
         close(exec->socketFd);
     }
     
-    // Remove from map
     s_cgiExecutions.erase(it);
     
-    // Free memory
     delete exec;
 }
 
-// NEW: Check for timed out CGI executions
 void CGIhandler::checkCgiTimeouts(EventManager& eventMgr) {
     time_t now = time(NULL);
     
@@ -472,17 +405,14 @@ void CGIhandler::checkCgiTimeouts(EventManager& eventMgr) {
         CgiExecution* exec = it->second;
         
         if (now - exec->startTime > CGI_TIMEOUT_SECONDS) {
-            exec->state = CGI_TIMEOUT;  // Use the enum value, not cast from int
+            exec->state = CGI_TIMEOUT;
             
-            // Kill the process
             if (exec->pid > 0) {
                 kill(exec->pid, SIGKILL);
             }
             
-            // Finalize
             finalizeCgiExecution(exec, eventMgr);
             
-            // Iterator invalidated, restart
             it = s_cgiExecutions.begin();
         } else {
             ++it;
@@ -490,11 +420,9 @@ void CGIhandler::checkCgiTimeouts(EventManager& eventMgr) {
     }
 }
 
-// Update buildEnv to add PATH_INFO and PATH_TRANSLATED
 std::vector<char*> CGIhandler::buildEnv(const Request &req, const LocationConfig* location, const ServerConfig* serverConfig) {
     std::map<std::string, std::string> envMap;
     
-    // Copy parent environment (as before)
     const std::map<std::string, std::string>& parentEnv = Server::getEnv();
     const char* importantVars[] = {"PATH", "HOME", "USER", "SHELL", "LANG", "LC_ALL", "LD_LIBRARY_PATH", NULL};
     for (int i = 0; importantVars[i] != NULL; ++i) {
@@ -504,30 +432,23 @@ std::vector<char*> CGIhandler::buildEnv(const Request &req, const LocationConfig
         }
     }
     
-    // Enhance PATH (as before - keeping your existing logic)
     if (envMap.find("PATH") != envMap.end()) {
-        // ... your existing PATH enhancement code ...
     }
     
-    // Extract URI components
     std::string uri = req.getURI();
     size_t queryPos = uri.find('?');
     std::string pathInfo = (queryPos != std::string::npos) ? uri.substr(0, queryPos) : uri;
     std::string queryString = (queryPos != std::string::npos) ? uri.substr(queryPos + 1) : "";
     
-    // MANDATORY CGI/1.0 variables
     envMap["REQUEST_METHOD"] = req.getMethod();
     envMap["SCRIPT_NAME"] = pathInfo;
     envMap["SCRIPT_FILENAME"] = location->getRoot() + pathInfo;
     
-    // PATH_INFO: The extra path information following the script name
-    // For /cgi-bin/script.js/extra/path, PATH_INFO = /extra/path
     std::string scriptPath = stripQueryString(pathInfo);
     if (!scriptPath.empty() && scriptPath[scriptPath.size() - 1] == '/')
         scriptPath.erase(scriptPath.size() - 1);
     std::string scriptName = scriptPath.substr(scriptPath.find_last_of('/') + 1);
     
-    // If URI contains more path after script name, that's PATH_INFO
     size_t scriptPos = pathInfo.find(scriptName);
     if (scriptPos != std::string::npos) {
         std::string extraPath = pathInfo.substr(scriptPos + scriptName.length());
@@ -546,12 +467,10 @@ std::vector<char*> CGIhandler::buildEnv(const Request &req, const LocationConfig
     envMap["QUERY_STRING"] = queryString;
     envMap["REQUEST_URI"] = uri;
     
-    // Content-Length
     std::ostringstream ssContentLen;
     ssContentLen << req.getRawBinaryBody().size();
     envMap["CONTENT_LENGTH"] = ssContentLen.str();
     
-    // Standard CGI variables
     envMap["GATEWAY_INTERFACE"] = "CGI/1.1";
     envMap["SERVER_PROTOCOL"] = "HTTP/1.0";
     envMap["REDIRECT_STATUS"] = "200";
@@ -563,7 +482,6 @@ std::vector<char*> CGIhandler::buildEnv(const Request &req, const LocationConfig
     
     envMap["SERVER_SOFTWARE"] = "WebServer/1.0";
     
-    // Process headers
     std::map<std::string, std::string> headers = req.getHeaders();
     for (std::map<std::string, std::string>::const_iterator it = headers.begin();
          it != headers.end(); ++it) {
@@ -574,7 +492,6 @@ std::vector<char*> CGIhandler::buildEnv(const Request &req, const LocationConfig
         }
         if (it->first == "Content-Length") continue;
         
-        // Convert to HTTP_* format
         std::string httpKey = "HTTP_";
         for (size_t i = 0; i < it->first.length(); ++i) {
             char c = it->first[i];
@@ -585,7 +502,6 @@ std::vector<char*> CGIhandler::buildEnv(const Request &req, const LocationConfig
         envMap[httpKey] = it->second;
     }
     
-    // Convert to char* vector
     std::vector<char*> env;
     for (std::map<std::string, std::string>::iterator it = envMap.begin();
          it != envMap.end(); ++it) {
@@ -598,10 +514,8 @@ std::vector<char*> CGIhandler::buildEnv(const Request &req, const LocationConfig
     return env;
 }
 
-// Update parseCgiOutput signature
 Response* CGIhandler::parseCgiOutput(const std::string &output, int /*exitCode*/) {
     
-    // Find headers/body separator
     size_t headerEnd = output.find("\r\n\r\n");
     size_t bodyStart = 0;
     
@@ -625,7 +539,6 @@ Response* CGIhandler::parseCgiOutput(const std::string &output, int /*exitCode*/
             res->setBody(bodyStr);
         }
     } else {
-        // No headers, treat as all body
         res->setStatus(200);
         res->setBody(output);
         res->addHeader("Content-Type", "text/html");

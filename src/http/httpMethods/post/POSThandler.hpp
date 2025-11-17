@@ -10,7 +10,6 @@
 
 class POSThandler : public HttpMethodHandler {
 private:
-    // Content type handlers
     Response* handleMultipartFormData(const Request& req, Response* response, 
                                     const std::vector<RequestBody>& bodyParts, 
                                     const std::string& uri,
@@ -30,12 +29,9 @@ private:
     
     Response* handleDefaultPost(const Request& req, Response* response, const std::string& uri);
     
-    // Utility methods
     std::string getContentType(const std::map<std::string, std::string>& headers);
     
     Response* createErrorResponse(int statusCode, const std::string& message);
-        // ← NEW: Get upload directory from location 
-        // this may no be necessarry - use the FileHandler class in utils dir
     std::string getUploadDirectory(const LocationConfig* location) const;
 
 public:

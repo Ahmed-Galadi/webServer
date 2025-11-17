@@ -14,7 +14,6 @@ Response* POSThandler::handleFormUrlEncoded(const Request& req, Response* respon
     size_t totalFields = 0;
     
     
-    // For URL-encoded data, each RequestBody represents one key=value pair
     for (size_t i = 0; i < bodyParts.size(); ++i) {
         const RequestBody& part = bodyParts[i];
         
@@ -22,7 +21,6 @@ Response* POSThandler::handleFormUrlEncoded(const Request& req, Response* respon
         std::string fieldValue = part.getRawData();
         
         
-        // Add to response table
         responseBody += "<tr>";
         responseBody += "<td><strong>" + fieldName + "</strong></td>";
         
@@ -33,7 +31,6 @@ Response* POSThandler::handleFormUrlEncoded(const Request& req, Response* respon
         responseBody += "</tr>";
         totalFields++;
         
-        // Also check encodedData as fallback (if your parser uses it)
         std::map<std::string, std::string> encodedData = part.getEncodedData();
         if (!encodedData.empty()) {
             std::map<std::string, std::string>::const_iterator it;
@@ -56,12 +53,10 @@ Response* POSThandler::handleFormUrlEncoded(const Request& req, Response* respon
     responseBody += "</table>";
     responseBody += "<p><strong>Total Fields:</strong> " + numberToString(totalFields) + "</p>";
     
-    // Debug information
     responseBody += "<div style='background-color: #f0f0f0; padding: 10px; margin: 10px 0;'>";
     responseBody += "<h3>Debug Information:</h3>";
     responseBody += "<p><strong>Body Parts Count:</strong> " + numberToString(bodyParts.size()) + "</p>";
     
-    // Show raw body for debugging
     std::string rawBody = req.getRawBody();
     responseBody += "<p><strong>Raw Body Length:</strong> " + numberToString(rawBody.length()) + " bytes</p>";
     
@@ -74,7 +69,6 @@ Response* POSThandler::handleFormUrlEncoded(const Request& req, Response* respon
     }
     responseBody += "</div>";
     
-    // Navigation
     responseBody += "<div style='margin: 20px 0;'>";
     responseBody += "<a href='/'>← Back to Home</a>";
     responseBody += "</div>";

@@ -8,51 +8,52 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1c1e26 0%, #2a2d39 100%);
+            color: #f0f2f5;
             min-height: 100vh;
             padding: 20px;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
+            background: #252831;
             border-radius: 15px;
             padding: 30px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
         h1 {
-            color: #667eea;
+            color: #61dafb;
             margin-bottom: 20px;
             text-align: center;
         }
         .upload-section {
-            background: #f8f9fa;
+            background: #1c1e26;
             padding: 30px;
             border-radius: 10px;
             margin-bottom: 30px;
             text-align: center;
         }
         .upload-area {
-            border: 3px dashed #667eea;
+            border: 3px dashed #61dafb;
             border-radius: 10px;
             padding: 40px;
             cursor: pointer;
             transition: all 0.3s;
         }
         .upload-area:hover {
-            background: #f0f2ff;
-            border-color: #764ba2;
+            background: #2a2d39;
+            border-color: #88f0ff;
         }
         .upload-area.drag-over {
-            background: #e8ebff;
-            border-color: #764ba2;
+            background: #2a2d39;
+            border-color: #88f0ff;
         }
         input[type="file"] {
             display: none;
         }
         .upload-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: #61dafb;
+            color: #1c1e26;
             border: none;
             padding: 12px 30px;
             border-radius: 8px;
@@ -60,6 +61,7 @@
             font-size: 16px;
             margin-top: 15px;
             transition: transform 0.2s;
+            font-weight: bold;
         }
         .upload-btn:hover {
             transform: translateY(-2px);
@@ -78,7 +80,7 @@
             margin-top: 20px;
         }
         .file-card {
-            background: #f8f9fa;
+            background: #1c1e26;
             border-radius: 10px;
             padding: 15px;
             text-align: center;
@@ -87,11 +89,12 @@
         }
         .file-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 15px rgba(97, 218, 251, 0.2);
         }
         .file-icon {
             font-size: 4em;
             margin-bottom: 10px;
+            color: #61dafb;
         }
         .file-preview {
             width: 100%;
@@ -103,7 +106,7 @@
         .file-name {
             word-break: break-all;
             font-size: 0.9em;
-            color: #333;
+            color: #a7b0c0;
             margin-bottom: 10px;
         }
         .file-actions {
@@ -118,20 +121,21 @@
             cursor: pointer;
             font-size: 0.85em;
             transition: all 0.2s;
+            font-weight: bold;
         }
         .btn-view {
-            background: #667eea;
-            color: white;
+            background: #61dafb;
+            color: #1c1e26;
         }
         .btn-view:hover {
-            background: #5568d3;
+            background: #88f0ff;
         }
         .btn-delete {
-            background: #dc3545;
+            background: #ff4d4d;
             color: white;
         }
         .btn-delete:hover {
-            background: #c82333;
+            background: #ff7f7f;
         }
         .message {
             padding: 15px;
@@ -141,21 +145,21 @@
             display: none;
         }
         .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #1c3b33;
+            color: #a6e9d5;
+            border: 1px solid #2ca880;
         }
         .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #4d2028;
+            color: #f8b4c0;
+            border: 1px solid #d9304f;
         }
         .back-link {
             text-align: center;
             margin-top: 20px;
         }
         .back-link a {
-            color: #667eea;
+            color: #61dafb;
             text-decoration: none;
             font-size: 1.1em;
         }
@@ -199,23 +203,24 @@
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #999;
+            color: #a7b0c0;
         }
         .empty-state .icon {
             font-size: 5em;
             margin-bottom: 20px;
+            color: #61dafb;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>💾 Drive - File Manager</h1>
+        <h1>Drive - File Manager</h1>
         
         <div id="message" class="message"></div>
         
         <div class="upload-section">
             <div class="upload-area" id="uploadArea">
-                <div style="font-size: 3em; margin-bottom: 15px;">📁</div>
+                <div style="font-size: 3em; margin-bottom: 15px;"></div>
                 <p style="font-size: 1.2em; color: #667eea; margin-bottom: 10px;">Drag & Drop files here</p>
                 <p style="color: #999; margin-bottom: 15px;">or</p>
                 <label for="fileInput" class="upload-btn">Choose Files</label>
@@ -342,7 +347,7 @@
             if (files.length === 0) {
                 filesGrid.innerHTML = `
                     <div class="empty-state" style="grid-column: 1/-1;">
-                        <div class="icon">📭</div>
+                        <div class="icon"></div>
                         <p>No files yet. Upload some files to get started!</p>
                     </div>
                 `;
@@ -354,17 +359,17 @@
                 const fileUrl = '/upload/' + encodeURIComponent(filename);
                 
                 let preview = '';
-                let icon = '📄';
+                let icon = '';
                 
                 if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
                     preview = `<img src="${fileUrl}" class="file-preview" alt="${filename}">`;
-                    icon = '🖼️';
+                    icon = '';
                 } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
-                    icon = '🎬';
+                    icon = '';
                 } else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) {
-                    icon = '🎵';
+                    icon = '';
                 } else if (['txt', 'pdf', 'doc', 'docx'].includes(ext)) {
-                    icon = '📝';
+                    icon = '';
                 }
 
                 return `

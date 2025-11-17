@@ -4,16 +4,9 @@
 #include "LocationConfig.hpp"
 #include "ParseUtils.hpp"
 
-// class ServerConfig;
 
 class ServerConfig {
 	private:
-	// 	std::vector<std::string> 	serverName;
-	//	std::vector<std::string> 	index;
-	//	bool							autoIndex;
-	//	std::pair<int, std::string> 	return;
-	//	size_t						clientBodyMaxSize;
-	//	std::vector<std::string>	methods;
 		int							port;
 		std::string					host;
 		std::string					root;
@@ -40,7 +33,6 @@ class ServerConfig {
 		std::vector<LocationConfig>	getLocations() const;
 		size_t						getClientMaxBodySize() const;
 		bool						getAutoIndex() const;
-		//LocationConfig* findLocation(const std::string& uri) const;
 		const LocationConfig* findLocation(const std::string& uri) const;
 
 };

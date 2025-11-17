@@ -3,7 +3,7 @@
 #include "../../../include/webserv.hpp"
 #include "../requestParse/Request.hpp"
 
-class ServerConfig; // Forward declaration
+class ServerConfig;
 
 class	Response {
 	private:

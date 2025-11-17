@@ -6,31 +6,28 @@
 #include "../../response/Response.hpp"
 #include "../../../server/Server.hpp"
 
-// Forward declaration
 class Client;
 
-// Enum for CGI execution state
 enum CgiState {
-    CGI_WRITING_BODY,    // Writing request body to CGI
-    CGI_READING_OUTPUT,  // Reading CGI output
-    CGI_COMPLETE,        // CGI finished successfully
-    CGI_ERROR,           // CGI error occurred
-    CGI_TIMEOUT          // CGI timed out
+    CGI_WRITING_BODY,
+    CGI_READING_OUTPUT,
+    CGI_COMPLETE,
+    CGI_ERROR,
+    CGI_TIMEOUT
 };
 
-// Structure to track ongoing CGI execution
 struct CgiExecution {
-    pid_t pid;                    // Child process ID
-    int socketFd;                 // Parent's end of socketpair
-    Client* client;               // Associated client
-    const ServerConfig* serverConfig; // Server configuration for error pages
-    std::string scriptPath;       // Path to CGI script
-    std::string requestBody;      // Request body to send
-    size_t bodyBytesWritten;      // Bytes written so far
-    std::string output;           // Accumulated output from CGI
-    time_t startTime;             // When CGI started
-    CgiState state;               // Current state
-    int scriptExitCode;           // Exit code from script
+    pid_t pid;
+    int socketFd;
+    Client* client;
+    const ServerConfig* serverConfig;
+    std::string scriptPath;
+    std::string requestBody;
+    size_t bodyBytesWritten;
+    std::string output;
+    time_t startTime;
+    CgiState state;
+    int scriptExitCode;
     
     CgiExecution() : pid(-1), socketFd(-1), client(NULL), serverConfig(NULL),
                      bodyBytesWritten(0), startTime(0),
@@ -43,7 +40,6 @@ public:
     virtual ~CGIhandler();
     virtual Response* handler(const Request &req, const LocationConfig* location, const ServerConfig* serverConfig);
     
-    // New: Async CGI methods
     static bool startCgiExecution(const Request &req, 
                                   const LocationConfig* location,
                                   const ServerConfig* serverConfig,
@@ -53,8 +49,6 @@ public:
     static void handleCgiEvent(int fd, uint32_t events, class EventManager& eventMgr);
     static void cleanupCgiExecution(int fd, class EventManager& eventMgr);
     static void checkCgiTimeouts(class EventManager& eventMgr);
-        // Static map to track all ongoing CGI executions
-    // Key: socket FD, Value: execution state
     static std::map<int, CgiExecution*> s_cgiExecutions;
 
 private:
@@ -62,7 +56,6 @@ private:
     Response* parseCgiOutput(const std::string &output, int exitCode);
     void parseCgiHeaders(const std::string &headersStr, Response *res);
     
-    // New: Helper methods for async execution
     static bool forkAndExecCgi(const std::string &scriptPath,
                               const std::vector<char*> &env,
                               int socketPair[2],
@@ -74,6 +67,5 @@ private:
     
 
     
-    // CGI timeout in seconds
     static const int CGI_TIMEOUT_SECONDS = 30;
 };

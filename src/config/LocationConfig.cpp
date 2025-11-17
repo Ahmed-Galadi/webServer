@@ -1,7 +1,6 @@
 #include "LocationConfig.hpp"
 #include <iostream>
 
-// default 1MB
 LocationConfig::LocationConfig() : cgi_enabled(false), client_max_body_size(1024 * 1024), autoindex(false), 
                                    has_return(false), return_code(0) {}
 
@@ -34,7 +33,6 @@ void	LocationConfig::setClientMaxBodySize(size_t size) {
 }
 
 void	LocationConfig::setReturn(int code, const std::string& url) {
-	// Validate that return code is one of 301, 302, or 307
 	if (code != 301 && code != 302 && code != 307) {
 		std::cerr << "[ERROR] Invalid return code " << code 
 		          << ". Only 301, 302, and 307 are allowed." << std::endl;

@@ -5,9 +5,8 @@
 std::map<std::string, std::string> MimeType::mimeTypes;
 
 void MimeType::initializeMimeTypes() {
-    if (!mimeTypes.empty()) return; // Already initialized
+    if (!mimeTypes.empty()) return;
     
-    // Images
     mimeTypes[".jpg"] = "image/jpeg";
     mimeTypes[".jpeg"] = "image/jpeg";
     mimeTypes[".png"] = "image/png";
@@ -19,7 +18,6 @@ void MimeType::initializeMimeTypes() {
     mimeTypes[".tif"] = "image/tiff";
     mimeTypes[".ico"] = "image/x-icon";
     
-    // Audio
     mimeTypes[".mp3"] = "audio/mpeg";
     mimeTypes[".wav"] = "audio/wav";
     mimeTypes[".ogg"] = "audio/ogg";
@@ -27,7 +25,6 @@ void MimeType::initializeMimeTypes() {
     mimeTypes[".flac"] = "audio/flac";
     mimeTypes[".aac"] = "audio/aac";
     
-    // Video
     mimeTypes[".mp4"] = "video/mp4";
     mimeTypes[".avi"] = "video/avi";
     mimeTypes[".mov"] = "video/quicktime";
@@ -35,7 +32,6 @@ void MimeType::initializeMimeTypes() {
     mimeTypes[".webm"] = "video/webm";
     mimeTypes[".mkv"] = "video/x-matroska";
     
-    // Documents
     mimeTypes[".pdf"] = "application/pdf";
     mimeTypes[".doc"] = "application/msword";
     mimeTypes[".docx"] = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -44,7 +40,6 @@ void MimeType::initializeMimeTypes() {
     mimeTypes[".ppt"] = "application/vnd.ms-powerpoint";
     mimeTypes[".pptx"] = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
     
-    // Text
     mimeTypes[".txt"] = "text/plain";
     mimeTypes[".html"] = "text/html";
     mimeTypes[".htm"] = "text/html";
@@ -54,14 +49,12 @@ void MimeType::initializeMimeTypes() {
     mimeTypes[".xml"] = "application/xml";
     mimeTypes[".csv"] = "text/csv";
     
-    // Archives
     mimeTypes[".zip"] = "application/zip";
     mimeTypes[".rar"] = "application/vnd.rar";
     mimeTypes[".tar"] = "application/x-tar";
     mimeTypes[".gz"] = "application/gzip";
     mimeTypes[".7z"] = "application/x-7z-compressed";
     
-    // Others
     mimeTypes[".bin"] = "application/octet-stream";
     mimeTypes[".exe"] = "application/octet-stream";
     mimeTypes[".dmg"] = "application/octet-stream";
@@ -87,7 +80,7 @@ std::string MimeType::getMimeType(const std::string& filename) {
     
     std::string extension = getFileExtension(filename);
     if (extension.empty()) {
-        return "application/octet-stream"; // Default for unknown types
+        return "application/octet-stream";
     }
     
     std::map<std::string, std::string>::const_iterator it = mimeTypes.find(extension);
@@ -95,7 +88,7 @@ std::string MimeType::getMimeType(const std::string& filename) {
         return it->second;
     }
     
-    return "application/octet-stream"; // Default for unknown extensions
+    return "application/octet-stream";
 }
 
 std::string MimeType::getMimeTypeFromExtension(const std::string& extension) {

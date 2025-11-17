@@ -6,7 +6,6 @@
 #include "../utils/MimeType.hpp"
 #include "../utils/FileHandler.hpp"
 
-// Move DirectoryEntry outside the class so it can be used with std::vector
 struct DirectoryEntry {
     std::string name;
     bool isDir;

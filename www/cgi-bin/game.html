@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Centered Button</title>
+    <style>
+        /* Base Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Body Styles (Centering) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1c1e26 0%, #2a2d39 100%);
+            color: #f0f2f5;
+            min-height: 100vh;
+            display: flex; /* Enables Flexbox */
+            align-items: center; /* Centers vertically */
+            justify-content: center; /* Centers horizontally */
+            padding: 20px;
+        }
+        
+        /* Nav Card Styling (Used for the Button Appearance) */
+        .nav-card {
+            /* Appearance */
+            background: linear-gradient(135deg, #2a2d39 0%, #3b4049 100%);
+            color: #f0f2f5;
+            border-radius: 12px;
+            text-decoration: none;
+            border: 2px solid transparent;
+            
+            /* Sizing & Padding */
+            padding: 35px 50px; /* Adjusted padding for a robust button look */
+            min-height: 80px;
+            width: 300px; /* Defined width for clear boundaries */
+            max-width: 90%;
+            
+            /* Flexbox Content Alignment (inherited from original CSS) */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+
+            /* Transition */
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+        }
+
+        /* Hover Effect */
+        .nav-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(97, 218, 251, 0.2);
+            border-color: rgba(97, 218, 251, 0.3);
+            cursor: pointer;
+        }
+
+        /* Inner Content Styling */
+        .nav-card h3 {
+            margin-bottom: 5px; /* Reduced margin for tight button look */
+            font-size: 1.5em;
+        }
+        .nav-card p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <a href="/cgi-bin/memory-game.py" class="nav-card">
+        <h3>Memory Game</h3>
+        <p>Match pairs in this fun 4x4 game</p>
+    </a>
+</body>
+</html>

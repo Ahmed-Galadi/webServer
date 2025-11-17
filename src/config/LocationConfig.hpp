@@ -12,11 +12,9 @@ class LocationConfig {
 		bool						cgi_enabled;
 		size_t						client_max_body_size;
 		bool						autoindex;
-		// Return directive: first = status code (301/302/307), second = URL
 		bool						has_return;
 		int							return_code;
 		std::string					return_url;
-		// Upload store: directory where uploaded files should be saved
 		std::string					upload_store;
 
 	public:

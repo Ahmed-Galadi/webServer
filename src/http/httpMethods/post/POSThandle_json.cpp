@@ -4,7 +4,6 @@
 Response* POSThandler::handleJsonData(const Request& req, Response* response, const std::string& uri) {
     std::string jsonData = req.getRawBody();
     
-    // Basic JSON validation (check if it starts and ends with braces or brackets)
     bool isValidJson = false;
     if (!jsonData.empty()) {
         char first = jsonData[0];
@@ -12,7 +11,6 @@ Response* POSThandler::handleJsonData(const Request& req, Response* response, co
         isValidJson = (first == '{' && last == '}') || (first == '[' && last == ']');
     }
     
-    // Create JSON response
     std::string responseBody = "{";
     responseBody += "\"status\":\"success\",";
     responseBody += "\"message\":\"JSON data received\",";
@@ -20,10 +18,8 @@ Response* POSThandler::handleJsonData(const Request& req, Response* response, co
     responseBody += "\"data_length\":" + numberToString(jsonData.length()) + ",";
     responseBody += "\"valid_json\":" + std::string(isValidJson ? "true" : "false");
     
-    // Add preview of received data (first 100 characters)
     if (jsonData.length() > 0) {
         std::string preview = jsonData.substr(0, 100);
-        // Escape quotes in preview for JSON
         std::string escapedPreview = "";
         for (size_t i = 0; i < preview.length(); ++i) {
             if (preview[i] == '"') {
@@ -49,8 +45,6 @@ Response* POSThandler::handleJsonData(const Request& req, Response* response, co
     
     responseBody += "}";
     
-    // TODO: Here you could parse the JSON and process it
-    // Example: processJsonData(jsonData, uri);
     
     response->setStatus(200);
     response->setBody(responseBody);

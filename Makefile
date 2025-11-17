@@ -1,4 +1,3 @@
-# ============ Makefile ============
 NAME = webserv
 CXX = c++
 CXXFLAGS = -std=c++98 -g -MMD -Wall -Wextra -Werror
@@ -17,21 +16,21 @@ SOURCES = $(SRCDIR)/main.cpp \
           $(SRCDIR)/config/ConfigParser.cpp \
           $(SRCDIR)/client/Client.cpp \
           $(SRCDIR)/http/requestParse/Request.cpp \
-		  $(SRCDIR)/http/requestParse/RequestBody.cpp \
-		  $(SRCDIR)/http/requestParse/RequestParser.cpp \
+	  $(SRCDIR)/http/requestParse/RequestBody.cpp \
+	  $(SRCDIR)/http/requestParse/RequestParser.cpp \
           $(SRCDIR)/http/response/Response.cpp \
-		  $(SRCDIR)/http/response/HttpMethodhandler.cpp \
-		  $(SRCDIR)/http/httpMethods/post/POSThandle_form.cpp \
-		  $(SRCDIR)/http/httpMethods/post/POSThandle_json.cpp \
-		  $(SRCDIR)/http/httpMethods/post/POSThandle_multipart.cpp \
-		  $(SRCDIR)/http/httpMethods/post/POSThandle_others.cpp \
-		  $(SRCDIR)/http/httpMethods/post/POSThandler.cpp \
-		  $(SRCDIR)/http/httpMethods/utils/MimeType.cpp \
-		  $(SRCDIR)/http/httpMethods/utils/FileHandler.cpp \
-		  $(SRCDIR)/utils/GlobalUtils.cpp \
-		  $(SRCDIR)/http/httpMethods/get/GEThandler.cpp \
-		  $(SRCDIR)/http/httpMethods/delete/DELETEhandler.cpp \
-		  $(SRCDIR)/http/httpMethods/cgi/CGIhandler.cpp \
+	  $(SRCDIR)/http/response/HttpMethodhandler.cpp \
+	  $(SRCDIR)/http/httpMethods/post/POSThandle_form.cpp \
+	  $(SRCDIR)/http/httpMethods/post/POSThandle_json.cpp \
+	  $(SRCDIR)/http/httpMethods/post/POSThandle_multipart.cpp \
+	  $(SRCDIR)/http/httpMethods/post/POSThandle_others.cpp \
+	  $(SRCDIR)/http/httpMethods/post/POSThandler.cpp \
+	  $(SRCDIR)/http/httpMethods/utils/MimeType.cpp \
+	  $(SRCDIR)/http/httpMethods/utils/FileHandler.cpp \
+	  $(SRCDIR)/utils/GlobalUtils.cpp \
+	  $(SRCDIR)/http/httpMethods/get/GEThandler.cpp \
+	  $(SRCDIR)/http/httpMethods/delete/DELETEhandler.cpp \
+	  $(SRCDIR)/http/httpMethods/cgi/CGIhandler.cpp \
 
 
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
@@ -54,12 +53,4 @@ fclean: clean
 
 re: fclean all
 
-# Development targets
-test: $(NAME)
-	./$(NAME) config/default.conf
-
-debug: CXXFLAGS += -DDEBUG
-debug: re
-
-# Include dependency files if they exist
 -include $(DEPFILES)

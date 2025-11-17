@@ -1,0 +1,17 @@
+[
+  {"id": 1, "name": "Laptop", "description": "A powerful laptop for all your needs.", "price": 1200},
+  {"id": 2, "name": "Smartphone", "description": "The latest smartphone with a great camera.", "price": 800},
+  {"id": 3, "name": "Headphones", "description": "Noise-cancelling headphones for immersive audio.", "price": 250},
+  {"id": 4, "name": "Smartwatch", "description": "Stay connected with this stylish smartwatch.", "price": 300},
+  {"id": 5, "name": "Tablet", "description": "A versatile tablet for work and play.", "price": 600},
+    {"id": 6, "name": "Gaming Console", "description": "Experience next-gen gaming with this console.", "price": 500},
+    {"id": 7, "name": "4K Monitor", "description": "A stunning 4K monitor for your workstation.", "price": 400},
+    {"id": 8, "name": "Wireless Charger", "description": "Conveniently charge your devices wirelessly.", "price": 50},
+    {"id": 9, "name": "Bluetooth Speaker", "description": "Portable speaker with excellent sound quality.", "price": 150},
+    {"id": 10, "name": "External Hard Drive", "description": "Store all your important files securely.", "price": 100},
+    {"id": 11, "name": "Fitness Tracker", "description": "Track your fitness goals with this device.", "price": 80},
+    {"id": 12, "name": "Digital Camera", "description": "Capture high-quality photos and videos.", "price": 700},
+    {"id": 13, "name": "E-Reader", "description": "Read your favorite books on this lightweight e-reader.", "price": 120},
+    {"id": 14, "name": "Smart Home Hub", "description": "Control all your smart home devices from one place.", "price": 200},
+    {"id": 15, "name": "VR Headset", "description": "Immerse yourself in virtual reality experiences.", "price": 350}
+]

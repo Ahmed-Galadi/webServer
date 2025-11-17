@@ -109,7 +109,6 @@ size_t Request::getContentLength() const {
 }
 
 void Request::parseRawReq(std::string rawRequest) {
-    // BINARY-SAFE: Split headers from body using raw data
     size_t headerEnd = rawRequest.find("\r\n\r\n");
     if (headerEnd == std::string::npos) {
         throw InvalidRequest();
@@ -117,7 +116,6 @@ void Request::parseRawReq(std::string rawRequest) {
     
     std::string headersData = rawRequest.substr(0, headerEnd);
     
-    // Process headers part
     std::vector<std::string> lines = split(headersData, "\r\n");
     if (lines.empty()) {
         throw InvalidRequest();
@@ -128,24 +126,20 @@ void Request::parseRawReq(std::string rawRequest) {
     std::vector<std::string> headerLines(lines.begin() + 1, lines.end());
     extractHeaders(headerLines);
     
-    // BINARY-SAFE: Extract body using raw bytes
     size_t bodyStart = headerEnd + 4;
     if (bodyStart < rawRequest.size()) {
         size_t bodySize = rawRequest.size() - bodyStart;
         
-        // Store as binary data
         binaryBody.clear();
         binaryBody.reserve(bodySize);
         for (size_t i = bodyStart; i < rawRequest.size(); ++i) {
             binaryBody.push_back(rawRequest[i]);
         }
         
-        // Also store as string for backwards compatibility (may truncate at null bytes)
         body = rawRequest.substr(bodyStart);
     }
 }
 
-// BINARY-SAFE: New method for extracting body
 void Request::extractBinaryBody(const char* data, size_t size) {
     binaryBody.clear();
     binaryBody.reserve(size);
@@ -154,8 +148,7 @@ void Request::extractBinaryBody(const char* data, size_t size) {
         binaryBody.push_back(data[i]);
     }
     
-    // Also create string version for backwards compatibility
-    body.assign(data, size);  // This uses explicit size, safer than constructor
+    body.assign(data, size);
 }
 
 std::vector<std::string> Request::splitHeaderFromBody(std::string rawRequest) {
@@ -169,7 +162,6 @@ std::vector<std::string> Request::splitHeaderFromBody(std::string rawRequest) {
     
     std::string headers = rawRequest.substr(0, pos);
     
-    // BINARY-SAFE: Use substr with explicit length
     std::string body = rawRequest.substr(pos + 4);
     
     parts.push_back(headers);
@@ -181,7 +173,6 @@ std::vector<std::string> Request::splitHeaderFromBody(std::string rawRequest) {
 }
 
 void Request::extractBody(std::string rawBody) {
-    // BINARY-SAFE: Store both ways
     binaryBody.clear();
     binaryBody.reserve(rawBody.size());
     
@@ -224,7 +215,6 @@ void Request::extractHeaders(std::vector<std::string> splitedHeaders) {
     }
 }
 
-// Getters
 std::map<std::string, std::string> Request::getHeaders() const {
     return headers;
 }
@@ -251,33 +241,29 @@ std::map<std::string, std::string> Request::getQuery() const {
     return query;
 }
 
-// BINARY-SAFE: Use binary body for raw data
 std::string Request::getRawBody() const {
-    // Convert binary data back to string for compatibility
     if (!binaryBody.empty()) {
         return std::string(binaryBody.begin(), binaryBody.end());
     }
     return body;
 }
 
-// BINARY-SAFE: New method to get true binary data
 const std::vector<char>& Request::getRawBinaryBody() const {
     return binaryBody;
 }
 
-// === Exceptions ===
 const char* Request::InvalidRequest::what() const throw() {
-    return ("\e[31m[REQUEST ERROR: INVALID REQUEST!]\e[0m");
+    return ("\033[31m[REQUEST ERROR: INVALID REQUEST!]\033[0m");
 }
 
 const char* Request::IncompleteRequest::what() const throw() {
-    return ("\e[33m[REQUEST WARNING: INCOMPLETE REQUEST!]\e[0m");
+    return ("\033[33m[REQUEST WARNING: INCOMPLETE REQUEST!]\033[0m");
 }
 
 const char* Request::ForbiddenMethod::what() const throw() {
-    return ("\e[31m[REQUEST ERROR: FORBIDDEN METHOD?]\e[0m");
+    return ("\033[31m[REQUEST ERROR: FORBIDDEN METHOD?]\033[0m");
 }
 
 const char* Request::NotSupportedRequest::what() const throw() {
-    return ("\e[31m[REQUEST ERROR: NOT SUPPORTED!]\e[0m");
+    return ("\033[31m[REQUEST ERROR: NOT SUPPORTED!]\033[0m");
 }

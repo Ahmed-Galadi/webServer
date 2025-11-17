@@ -1,4 +1,3 @@
-// Update your existing POSThandle_multipart.cpp with these changes:
 
 #include "./POSThandler.hpp"
 #include "../../../../include/GlobalUtils.hpp"
@@ -8,14 +7,12 @@
 
 
 
-// ← UPDATED: handleMultipartFormData with LocationConfig
 Response* POSThandler::handleMultipartFormData(const Request& /* req */, Response* response, 
                                             const std::vector<RequestBody>& bodyParts, 
                                             const std::string& uri,
                                             const LocationConfig* location) {
     
     
-    // ← USE: Get upload directory from location config
     std::string uploadDir = getUploadDirectory(location);;
     FileHandler::setUploadDirectory(uploadDir);
     
@@ -33,7 +30,6 @@ Response* POSThandler::handleMultipartFormData(const Request& /* req */, Respons
         responseBody += "<p><strong>Field Name:</strong> " + part.getName() + "</p>";
         
         if (!part.getFileName().empty()) {
-            // Handle file upload
             totalFiles++;
             std::string originalFilename = part.getFileName();
             std::string contentType = part.getContentType();
@@ -54,7 +50,6 @@ Response* POSThandler::handleMultipartFormData(const Request& /* req */, Respons
             responseBody += "<p><strong>Content-Type:</strong> " + contentType + "</p>";
             responseBody += "<p><strong>File Size:</strong> " + numberToString(fileSize) + " bytes</p>";
             
-            // Save file
             std::string savedFilename;
             if (hasBinaryData) {
                 const std::vector<char>& binaryData = part.getBinaryData();
@@ -72,7 +67,6 @@ Response* POSThandler::handleMultipartFormData(const Request& /* req */, Respons
                 responseBody += "<p><strong>Status:</strong> <span style='color: red;'>✗ Upload Failed</span></p>";
             }
         } else {
-            // Handle form field
             totalFields++;
             std::string value = part.getRawData();
             if (value.length() > 200) {
@@ -85,22 +79,18 @@ Response* POSThandler::handleMultipartFormData(const Request& /* req */, Respons
     
     responseBody += "</body></html>";
     
-    // Set appropriate status code
     if (!uploadedFiles.empty()) {
-        // Files uploaded - resource created
-        response->setStatus(201);  // 201 Created
+        response->setStatus(201);
         
         std::map<std::string, std::string> responseHeaders;
         responseHeaders["Content-Type"] = "text/html";
         responseHeaders["Content-Length"] = numberToString(responseBody.length());
         
-        // Add Location header for first uploaded file
         responseHeaders["Location"] = FileHandler::getUploadDirectory() + "/" + uploadedFiles[0];
         
         response->setHeaders(responseHeaders);
     } else {
-        // No files uploaded - just form fields
-        response->setStatus(200);  // 200 OK
+        response->setStatus(200);
         
         std::map<std::string, std::string> responseHeaders;
         responseHeaders["Content-Type"] = "text/html";
@@ -112,4 +102,3 @@ Response* POSThandler::handleMultipartFormData(const Request& /* req */, Respons
     return response;
 }
 
-// Other handlers remain the same (they don't need location)

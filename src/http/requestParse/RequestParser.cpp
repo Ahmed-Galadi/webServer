@@ -5,14 +5,12 @@
 
 std::vector<RequestBody> RequestParser::parseMultipartFormData(const Request& req, const std::string& contentType) {
     
-    // Extract boundary
     std::string boundary = extractBoundary(contentType);
     if (boundary.empty()) {
         return std::vector<RequestBody>();
     }
     
     
-    // BINARY-SAFE: Use binary data for parsing
     const std::vector<char>& binaryBody = req.getRawBinaryBody();
     if (binaryBody.empty()) {
         return std::vector<RequestBody>();
@@ -53,12 +51,10 @@ std::vector<RequestBody> RequestParser::parseMultipartBinary(const std::vector<c
     std::string endBoundary = "--" + boundary + "--";
     
     
-    // Convert binary data to string for boundary searching (this is safe because boundaries are ASCII)
     std::string dataStr(data.begin(), data.end());
     
     std::vector<size_t> boundaryPositions;
     
-    // Find all boundary positions
     size_t pos = 0;
     while ((pos = dataStr.find(fullBoundary, pos)) != std::string::npos) {
         boundaryPositions.push_back(pos);
@@ -69,12 +65,10 @@ std::vector<RequestBody> RequestParser::parseMultipartBinary(const std::vector<c
         return bodies;
     }
     
-    // Parse each part between boundaries
     for (size_t i = 0; i < boundaryPositions.size() - 1; ++i) {
         size_t partStart = boundaryPositions[i] + fullBoundary.length();
         size_t partEnd = boundaryPositions[i + 1];
         
-        // Skip CRLF after boundary
         if (partStart + 2 < data.size() && data[partStart] == '\r' && data[partStart + 1] == '\n') {
             partStart += 2;
         }
@@ -98,7 +92,6 @@ RequestBody RequestParser::parseMultipartPart(const std::vector<char>& data, siz
         return body;
     }
     
-    // Find headers end (\r\n\r\n) within this part
     std::string partStr(data.begin() + start, data.begin() + end);
     size_t headersEnd = partStr.find("\r\n\r\n");
     
@@ -108,14 +101,11 @@ RequestBody RequestParser::parseMultipartPart(const std::vector<char>& data, siz
     
     std::string headersStr = partStr.substr(0, headersEnd);
     
-    // Parse headers
     parsePartHeaders(headersStr, body);
     
-    // Extract binary data
-    size_t dataStart = start + headersEnd + 4; // +4 for \r\n\r\n
+    size_t dataStart = start + headersEnd + 4;
     size_t dataEnd = end;
     
-    // Remove trailing CRLF before next boundary
     if (dataEnd >= 2 && data[dataEnd - 2] == '\r' && data[dataEnd - 1] == '\n') {
         dataEnd -= 2;
     }
@@ -123,7 +113,6 @@ RequestBody RequestParser::parseMultipartPart(const std::vector<char>& data, siz
     if (dataStart < dataEnd) {
         size_t dataSize = dataEnd - dataStart;
         
-        // BINARY-SAFE: Store the data properly
         body.setBinaryData(&data[dataStart], dataSize);
         
         
@@ -151,11 +140,10 @@ void RequestParser::parsePartHeaders(const std::string& headersStr, RequestBody&
 }
 
 void RequestParser::parseContentDisposition(const std::string& header, RequestBody& body) {
-    // Example: Content-Disposition: form-data; name="file"; filename="test.jpg"
     
     size_t namePos = header.find("name=\"");
     if (namePos != std::string::npos) {
-        namePos += 6; // Skip name="
+        namePos += 6;
         size_t nameEnd = header.find("\"", namePos);
         if (nameEnd != std::string::npos) {
             std::string name = header.substr(namePos, nameEnd - namePos);
@@ -165,7 +153,7 @@ void RequestParser::parseContentDisposition(const std::string& header, RequestBo
     
     size_t filenamePos = header.find("filename=\"");
     if (filenamePos != std::string::npos) {
-        filenamePos += 10; // Skip filename="
+        filenamePos += 10;
         size_t filenameEnd = header.find("\"", filenamePos);
         if (filenameEnd != std::string::npos) {
             std::string filename = header.substr(filenamePos, filenameEnd - filenamePos);
@@ -175,7 +163,6 @@ void RequestParser::parseContentDisposition(const std::string& header, RequestBo
 }
 
 void RequestParser::parseContentType(const std::string& header, RequestBody& body) {
-    // Example: Content-Type: image/jpeg
     
     size_t colonPos = header.find(":");
     if (colonPos != std::string::npos && colonPos + 1 < header.length()) {
@@ -190,20 +177,17 @@ std::string RequestParser::extractBoundary(const std::string& contentType) {
         return "";
     }
     
-    boundaryPos += 9; // Skip "boundary="
+    boundaryPos += 9;
     
-    // Handle quoted boundary
     std::string boundary;
     if (boundaryPos < contentType.length()) {
         if (contentType[boundaryPos] == '"') {
-            // Quoted boundary
-            boundaryPos++; // Skip opening quote
+            boundaryPos++;
             size_t endPos = contentType.find('"', boundaryPos);
             if (endPos != std::string::npos) {
                 boundary = contentType.substr(boundaryPos, endPos - boundaryPos);
             }
         } else {
-            // Unquoted boundary - take until semicolon or end
             size_t endPos = contentType.find(';', boundaryPos);
             if (endPos == std::string::npos) {
                 boundary = contentType.substr(boundaryPos);
@@ -240,7 +224,6 @@ std::string RequestParser::urlDecode(const std::string& encoded) {
     std::string decoded;
     for (size_t i = 0; i < encoded.length(); ++i) {
         if (encoded[i] == '%' && i + 2 < encoded.length()) {
-            // Convert hex to char
             std::string hex = encoded.substr(i + 1, 2);
             char c = static_cast<char>(std::strtol(hex.c_str(), NULL, 16));
             decoded += c;
@@ -254,7 +237,6 @@ std::string RequestParser::urlDecode(const std::string& encoded) {
     return decoded;
 }
 
-// Helper function for splitting strings
 std::vector<std::string> RequestParser::split(const std::string& str, const std::string& delimiter) {
     std::vector<std::string> tokens;
     size_t start = 0;

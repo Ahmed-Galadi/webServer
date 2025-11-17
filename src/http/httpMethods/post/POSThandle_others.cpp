@@ -1,7 +1,6 @@
 #include "./POSThandler.hpp"
 #include "../../../../include/GlobalUtils.hpp"
 
-// Handler for text/plain content
 Response* POSThandler::handlePlainText(const Request& req, Response* response, const std::string& uri) {
     std::string textData = req.getRawBody();
     
@@ -9,7 +8,6 @@ Response* POSThandler::handlePlainText(const Request& req, Response* response, c
     responseBody += "URI: " + uri + "\n";
     responseBody += "Received: " + numberToString(textData.length()) + " bytes of text data\n\n";
     
-    // Show first 500 characters
     if (textData.length() > 0) {
         responseBody += "Content Preview:\n";
         responseBody += "================\n";
@@ -22,8 +20,6 @@ Response* POSThandler::handlePlainText(const Request& req, Response* response, c
         responseBody += "No content received.";
     }
     
-    // TODO: Here you could process the text data
-    // Example: processTextData(textData, uri);
     
     response->setStatus(200);
     response->setBody(responseBody);
@@ -36,7 +32,6 @@ Response* POSThandler::handlePlainText(const Request& req, Response* response, c
     return response;
 }
 
-// Handler for binary data (application/octet-stream)
 Response* POSThandler::handleBinaryData(const Request& req, Response* response,
                                      const std::vector<RequestBody>& bodyParts,
                                      const std::string& uri) {
@@ -68,7 +63,6 @@ Response* POSThandler::handleBinaryData(const Request& req, Response* response,
         }
         responseBody += "</ul>";
     } else {
-        // Handle raw binary data
         std::string rawData = req.getRawBody();
         totalBytes = rawData.length();
         responseBody += "<p>Raw binary data: " + numberToString(totalBytes) + " bytes</p>";
@@ -76,8 +70,6 @@ Response* POSThandler::handleBinaryData(const Request& req, Response* response,
     
     responseBody += "<p><strong>Total Size:</strong> " + numberToString(totalBytes) + " bytes</p>";
     
-    // TODO: Here you could save or process the binary data
-    // Example: saveBinaryData(bodyParts, uri);
     
     responseBody += "</body></html>";
     
@@ -92,7 +84,6 @@ Response* POSThandler::handleBinaryData(const Request& req, Response* response,
     return response;
 }
 
-// Default handler for unknown content types
 Response* POSThandler::handleDefaultPost(const Request& req, Response* response, const std::string& uri) {
     std::string rawBody = req.getRawBody();
     std::map<std::string, std::string> headers = req.getHeaders();
@@ -104,7 +95,6 @@ Response* POSThandler::handleDefaultPost(const Request& req, Response* response,
     responseBody += "<p><strong>Version:</strong> " + req.getVersion() + "</p>";
     responseBody += "<p><strong>Content Length:</strong> " + numberToString(rawBody.length()) + " bytes</p>";
     
-    // Show headers
     responseBody += "<h3>Headers:</h3><ul>";
     std::map<std::string, std::string>::const_iterator it;
     for (it = headers.begin(); it != headers.end(); ++it) {
@@ -112,7 +102,6 @@ Response* POSThandler::handleDefaultPost(const Request& req, Response* response,
     }
     responseBody += "</ul>";
     
-    // Show query parameters if any
     std::map<std::string, std::string> query = req.getQuery();
     if (!query.empty()) {
         responseBody += "<h3>Query Parameters:</h3><ul>";
@@ -122,7 +111,6 @@ Response* POSThandler::handleDefaultPost(const Request& req, Response* response,
         responseBody += "</ul>";
     }
     
-    // Show body preview
     if (rawBody.length() > 0) {
         responseBody += "<h3>Body Preview:</h3>";
         responseBody += "<pre>";

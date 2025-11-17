@@ -13,7 +13,6 @@ std::string FileHandler::uploadDirectory = "./www/upload";
 void FileHandler::setUploadDirectory(const std::string& dir) {
     uploadDirectory = dir;
     
-    // Create directory if it doesn't exist
     struct stat st;
     if (stat(dir.c_str(), &st) == -1) {
         mkdir(dir.c_str(), 0755);
@@ -27,7 +26,6 @@ std::string FileHandler::getUploadDirectory() {
 std::string FileHandler::sanitizeFilename(const std::string& filename) {
     std::string sanitized = filename;
     
-    // Remove or replace dangerous characters
     for (size_t i = 0; i < sanitized.length(); ++i) {
         char c = sanitized[i];
         if (c == '/' || c == '\\' || c == ':' || c == '*' || 
@@ -36,12 +34,10 @@ std::string FileHandler::sanitizeFilename(const std::string& filename) {
         }
     }
     
-    // Remove leading dots and spaces
     while (!sanitized.empty() && (sanitized[0] == '.' || sanitized[0] == ' ')) {
         sanitized = sanitized.substr(1);
     }
     
-    // If empty after sanitization, use default name
     if (sanitized.empty()) {
         sanitized = "unnamed_file";
     }
@@ -54,12 +50,10 @@ std::string FileHandler::generateUniqueFilename(const std::string& originalFilen
     std::string fullPath = uploadDirectory + "/" + sanitized;
     struct stat buffer;
     
-    // If file doesn't exist, use the original name
     if (stat(fullPath.c_str(), &buffer) != 0) {
         return sanitized;
     }
     
-    // File exists, add counter
     size_t dotPos = sanitized.find_last_of(".");
     std::string extension = "";
     std::string baseName = sanitized;
@@ -109,12 +103,10 @@ bool FileHandler::readBinaryFile(const std::string& filepath, std::vector<char>&
         return false;
     }
     
-    // Get file size
     file.seekg(0, std::ios::end);
     size_t size = file.tellg();
     file.seekg(0, std::ios::beg);
     
-    // Read file content
     content.resize(size);
     file.read(&content[0], size);
     
@@ -125,7 +117,6 @@ bool FileHandler::readBinaryFile(const std::string& filepath, std::vector<char>&
 
 
 
-// BINARY-SAFE: Save binary file from vector<char>
 std::string FileHandler::saveUploadedBinaryFile(const std::string& originalFilename, 
                                                const std::vector<char>& binaryData) {
     
@@ -133,18 +124,15 @@ std::string FileHandler::saveUploadedBinaryFile(const std::string& originalFilen
         return "";
     }
     
-    // Generate unique filename
     std::string savedFilename = generateUniqueFilename(originalFilename);
     std::string fullPath = uploadDirectory + "/" + savedFilename;
     
     
-    // Open file in binary mode
     std::ofstream file(fullPath.c_str(), std::ios::binary);
     if (!file.is_open()) {
         return "";
     }
     
-    // Write binary data
     file.write(&binaryData[0], binaryData.size());
     
     if (file.fail()) {
@@ -153,25 +141,9 @@ std::string FileHandler::saveUploadedBinaryFile(const std::string& originalFilen
     }
     
     file.close();
-    
-    // Verify file was written correctly
-    std::ifstream verifyFile(fullPath.c_str(), std::ios::binary | std::ios::ate);
-    if (verifyFile.is_open()) {
-        std::streamsize fileSize = verifyFile.tellg();
-        verifyFile.close();
-        
-        
-        if (static_cast<size_t>(fileSize) != binaryData.size()) {
-            return "";
-        }
-    } else {
-        return "";
-    }
-    
     return savedFilename;
 }
 
-// Text file saving (existing method, but improved)
 std::string FileHandler::saveUploadedFile(const std::string& originalFilename, 
                                          const std::string& data) {
     
@@ -179,18 +151,15 @@ std::string FileHandler::saveUploadedFile(const std::string& originalFilename,
         return "";
     }
     
-    // Generate unique filename
     std::string savedFilename = generateUniqueFilename(originalFilename);
     std::string fullPath = uploadDirectory + "/" + savedFilename;
     
     
-    // For text files, we still use binary mode to preserve exact data
     std::ofstream file(fullPath.c_str(), std::ios::binary);
     if (!file.is_open()) {
         return "";
     }
     
-    // Write data
     file.write(data.c_str(), data.size());
     
     if (file.fail()) {
@@ -215,13 +184,6 @@ std::string FileHandler::getFileName(const std::string& filepath) {
 
 
 
-// before:
-
-// Root directive behavior in this implementation: behaves like NGINX alias
-// This means it REPLACES the location prefix with the root path
-// Example: location /images/ { root /var/www/assets/pictures/; }
-//          URI: /images/logo.png -> /var/www/assets/pictures/logo.png (not /var/www/assets/pictures/images/logo.png)
-// This is what the subject requirements ask for: "root should behave like alias"
 std::string FileHandler::resolveFilePath(const std::string &uri, const LocationConfig *location)
 {
     std::string root = "www";
@@ -236,48 +198,38 @@ std::string FileHandler::resolveFilePath(const std::string &uri, const LocationC
             locationPath = location->getPath();
         if (!location->getIndex().empty())
             indexFile = location->getIndex();
-        // autoindex = location->getAutoIndex(); // Not used in this function
     }
 
-    // Clean root: remove trailing slash if present
     if (!root.empty() && root[root.size() - 1] == '/')
         root.erase(root.size() - 1);
     
-    // Clean location path: remove trailing slash for matching
     std::string cleanLocationPath = locationPath;
     if (cleanLocationPath.size() > 1 && cleanLocationPath[cleanLocationPath.size() - 1] == '/')
     {
         cleanLocationPath.erase(cleanLocationPath.size() - 1);
     }
 
-    // Remove the location prefix from URI (alias behavior)
     std::string relativeUri = uri;
     if (uri.find(cleanLocationPath) == 0)
     {
         relativeUri = uri.substr(cleanLocationPath.size());
     }
     
-    // Remove leading slash from relative URI
     if (!relativeUri.empty() && relativeUri[0] == '/')
         relativeUri.erase(0, 1);
 
-    // Build full path: root + relative URI
     std::string fullPath = root;
     if (!relativeUri.empty())
     {
         fullPath += "/" + relativeUri;
     }
 
-    // Check if path is a directory
     struct stat pathStat;
     if (stat(fullPath.c_str(), &pathStat) == 0 && S_ISDIR(pathStat.st_mode))
     {
-        // Ensure trailing slash for directories
         if (fullPath[fullPath.size() - 1] != '/')
             fullPath += '/';
         
-        // DON'T append index here - let the handler decide based on autoindex setting
-        // The GET handler will check for index file and autoindex setting
     }
 
 
