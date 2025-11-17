@@ -1,7 +1,5 @@
 #include "./DELETEhandler.hpp"
-#include <sys/stat.h>
-#include <iostream>
-#include <cstdio>
+#include "../../../../include/webserv.hpp"
 
 static bool fileExists(const std::string &path) {
     struct stat buffer;
@@ -17,11 +15,14 @@ Response* DELETEhandler::handler(const Request &req, const LocationConfig* locat
     if (!fileExists(filePath)) {
         return Response::makeErrorResponse(404);
     }
-    
-    if (std::remove(filePath.c_str()) != 0) {
-        return Response::makeErrorResponse(500);
+
+    if (access(filePath.c_str(), W_OK) != 0) {
+        return Response::makeErrorResponse(403);
     }
     
+    if (unlink(filePath.c_str()) != 0) {
+        return Response::makeErrorResponse(500);
+    }
     
     Response* response = new Response();
     response->setStatus(204);

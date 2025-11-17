@@ -1,0 +1,24 @@
+obj/http/httpMethods/get/GEThandler.o: \
+ src/http/httpMethods/get/GEThandler.cpp \
+ src/http/httpMethods/get/./GEThandler.hpp \
+ src/http/httpMethods/get/./../../../../include/webserv.hpp \
+ src/http/httpMethods/get/./../../response/HttpMethodHandler.hpp \
+ src/http/httpMethods/get/./../../response/../../../include/webserv.hpp \
+ src/http/httpMethods/get/./../../response/../requestParse/Request.hpp \
+ src/http/httpMethods/get/./../../response/../requestParse/../../../include/webserv.hpp \
+ src/http/httpMethods/get/./../../response/../requestParse/RequestBody.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/HttpMethodHandler.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../../../include/webserv.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../requestParse/Request.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../response/Response.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../response/../../../include/webserv.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../response/../requestParse/Request.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../../config/LocationConfig.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../../config/../../include/webserv.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../../config/ParseUtils.hpp \
+ src/http/httpMethods/get/./../../response/../httpMethods/../../config/ServerConfig.hpp \
+ src/http/httpMethods/get/./../utils/MimeType.hpp \
+ src/http/httpMethods/get/./../utils/../../../../include/webserv.hpp \
+ src/http/httpMethods/get/./../utils/FileHandler.hpp \
+ src/http/httpMethods/get/../../../../include/GlobalUtils.hpp \
+ src/http/httpMethods/get/../../../../include/webserv.hpp
